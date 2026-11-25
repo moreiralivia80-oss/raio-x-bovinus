@@ -68,10 +68,14 @@ flash = [n for n in nomes if "flash" in n]
 linha(f"   Modelos 'flash' disponíveis: {', '.join(flash) or 'nenhum'}")
 linha(f"   O Raio-X vai tentar, nesta ordem: {', '.join(gemini.modelos())}")
 
-linha("4. Teste rápido de cada modelo (texto + imagem pequena):")
-img = base64.b64encode(imagem_teste()).decode()
-for modelo in gemini.modelos()[:4]:
+linha("4. Teste de velocidade (imagem pequena). Pode levar alguns minutos, aguarde o 'Fim'.")
+candidatos = []
+for m in gemini.modelos() + ["gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-2.5-flash-lite"]:
+    if m not in candidatos and (not nomes or m in nomes):
+        candidatos.append(m)
+for modelo in candidatos[:6]:
     for nivel, nome_nivel in ((0, "pensando pouco"), (2, "simples")):
+        print(f"   {modelo:26} {nome_nivel:15} testando...", end=" ", flush=True)
         corpo = gemini._corpo(imagem_teste(), "image/png", ["Arroz", "Feijão"], modelo, nivel)
         t = time.monotonic()
         try:
@@ -80,10 +84,10 @@ for modelo in gemini.modelos()[:4]:
             dt = time.monotonic() - t
             if resp.status_code == 200:
                 texto = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-                ok = "JSON ok" if json.loads(texto) is not None else "?"
-                linha(f"   {modelo:28} {nome_nivel:15} HTTP 200 em {dt:5.1f} s  ({ok})")
+                json.loads(texto)
+                print(f"OK em {dt:.1f} s", flush=True)
                 break
-            linha(f"   {modelo:28} {nome_nivel:15} HTTP {resp.status_code} em {dt:5.1f} s: {resp.text[:160]}")
+            print(f"HTTP {resp.status_code} em {dt:.1f} s: {resp.text[:150]}", flush=True)
         except Exception as erro:
-            linha(f"   {modelo:28} {nome_nivel:15} FALHOU em {time.monotonic() - t:5.1f} s: {erro.__class__.__name__}")
+            print(f"FALHOU em {time.monotonic() - t:.1f} s ({erro.__class__.__name__})", flush=True)
 linha("\nFim. Copie tudo acima e envie.")
