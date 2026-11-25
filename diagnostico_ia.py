@@ -68,9 +68,9 @@ flash = [n for n in nomes if "flash" in n]
 linha(f"   Modelos 'flash' disponíveis: {', '.join(flash) or 'nenhum'}")
 linha(f"   O Raio-X vai tentar, nesta ordem: {', '.join(gemini.modelos())}")
 
-linha("4. Teste de velocidade (imagem pequena). Pode levar alguns minutos, aguarde o 'Fim'.")
+linha("4. Teste de velocidade (imagem pequena, até 30 s por modelo). Aguarde aparecer 'Fim'.")
 candidatos = []
-for m in gemini.modelos() + ["gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-2.5-flash-lite"]:
+for m in gemini.modelos():
     if m not in candidatos and (not nomes or m in nomes):
         candidatos.append(m)
 for modelo in candidatos[:6]:
@@ -80,7 +80,7 @@ for modelo in candidatos[:6]:
         t = time.monotonic()
         try:
             resp = requests.post(gemini.URL.format(modelo=modelo), headers={"x-goog-api-key": chave},
-                                 json=corpo, timeout=60)
+                                 json=corpo, timeout=30)
             dt = time.monotonic() - t
             if resp.status_code == 200:
                 texto = resp.json()["candidates"][0]["content"]["parts"][0]["text"]

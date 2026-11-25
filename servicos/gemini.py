@@ -17,12 +17,13 @@ import requests
 URL = "https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent"
 # Tenta na ordem; se um nome de modelo não existir mais (erro 404), passa para o próximo.
 MODELOS_PADRAO = [
-    "gemini-flash-latest", "gemini-3.8-flash", "gemini-3.6-flash",
-    "gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-2.5-flash",
+    # rápidos primeiro: na balança, responder em segundos vale mais que o modelo maior
+    "gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-2.5-flash-lite",
+    "gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-flash",
 ]
 ESPERA_SEGUNDOS = 1.5   # pausa antes de tentar de novo quando o Google está ocupado
-TEMPO_POR_TENTATIVA = 45  # segundos para um modelo responder
-TEMPO_MAXIMO = 100        # segundos, somando todas as tentativas
+TEMPO_POR_TENTATIVA = 25  # segundos para um modelo responder antes de passar ao próximo
+TEMPO_MAXIMO = 90         # segundos, somando todas as tentativas
 
 PROMPT = """Você é um especialista em identificar alimentos em fotos de pratos de um restaurante \
 self-service por quilo com churrascaria (Bovinu'S Grill & Beer, São Paulo). A foto é tirada \
@@ -149,7 +150,8 @@ def modelos():
     lista = [m for m in MODELOS_PADRAO if m in disponiveis]
     # se nenhum da lista existir, usa qualquer "flash" que a chave tenha (exceto imagem/áudio/tts)
     extras = sorted((m for m in disponiveis if "flash" in m and not any(
-        x in m for x in ("image", "tts", "audio", "live", "embedding"))), reverse=True)
+        x in m for x in ("image", "tts", "audio", "live", "embedding", "omni", "preview"))),
+        key=lambda m: ("lite" not in m, m), reverse=False)
     return (lista + [m for m in extras if m not in lista])[:6] or MODELOS_PADRAO
 
 
