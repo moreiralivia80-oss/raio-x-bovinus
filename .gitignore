@@ -6,3 +6,6 @@ venv/
 .vscode/
 .idea/
 .DS_Store
+
+# banco de dados local (cada um tem o seu)
+bovinus.db

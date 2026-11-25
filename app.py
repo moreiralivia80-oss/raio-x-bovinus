@@ -37,9 +37,13 @@ def carregar_env(caminho=".env"):
 carregar_env()
 
 from servicos import custos, gemini  # noqa: E402  (depois do .env, para já ler a chave)
+from servicos.mesas import criar_tabela, mesas_bp  # noqa: E402
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # fotos de até 10 MB
+
+criar_tabela()                      # cria a tabela de mesas no banco, se ainda não existir
+app.register_blueprint(mesas_bp)    # ativa as rotas /api/mesas/...
 
 
 @app.context_processor
