@@ -24,7 +24,11 @@ const reais = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "B
 
 async function ligarCamera() {
   if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-    aviso.textContent = "Toque em Tirar foto para abrir a câmera do aparelho.";
+    // sem HTTPS o navegador bloqueia a câmera ao vivo; no celular, a câmera do aparelho resolve
+    const computador = window.matchMedia("(pointer: fine)").matches;
+    aviso.textContent = computador
+      ? "Para ver a câmera ao vivo, abra por localhost:5000. Ou toque em Enviar foto."
+      : "Toque em Tirar foto para abrir a câmera do celular.";
     return;
   }
   try {
@@ -47,8 +51,15 @@ function mostrarFoto(blob) {
   foto.hidden = false;
   video.hidden = true;
   btnCapturar.textContent = "Tirar outra";
-  aviso.textContent = "Foto pronta. Confira o peso e toque em Analisar prato.";
+  aviso.textContent = "Foto pronta.";
   limparErro();
+  // a medição começa sozinha assim que a foto é tirada
+  if (Number(peso.value) > 0) {
+    analisar();
+  } else {
+    status("Foto pronta. Informe o peso do prato para medir.");
+    peso.focus();
+  }
 }
 
 function voltarParaCamera() {
@@ -57,6 +68,7 @@ function voltarParaCamera() {
   video.hidden = false;
   btnCapturar.textContent = "Tirar foto";
   aviso.textContent = "Enquadre só o prato e toque em Tirar foto.";
+  limparResultado();
 }
 
 btnCapturar.addEventListener("click", () => {
@@ -112,14 +124,32 @@ function limparErro() {
 }
 
 peso.addEventListener("input", limparErro);
+peso.addEventListener("keydown", (e) => { if (e.key === "Enter") analisar(); });
 
-function estado(nome) {
-  document.getElementById("resultado-vazio").hidden = nome !== "vazio";
-  document.getElementById("resultado-carregando").hidden = nome !== "carregando";
-  document.getElementById("resultado-conteudo").hidden = nome !== "conteudo";
+const conteudo = document.getElementById("resultado-conteudo");
+const statusTexto = document.getElementById("status");
+
+function status(texto) {
+  statusTexto.textContent = texto;
 }
 
-btnAnalisar.addEventListener("click", async () => {
+function limparResultado() {
+  conteudo.classList.remove("resultado__conteudo--medindo");
+  document.getElementById("origem").hidden = true;
+  document.getElementById("precisao").className = "precisao";
+  document.getElementById("precisao-valor").textContent = "–";
+  document.getElementById("precisao-barra").style.width = "0";
+  document.getElementById("precisao-texto").textContent = "";
+  for (const id of ["r-receita", "r-custo", "r-margem"]) document.getElementById(id).textContent = "–";
+  document.getElementById("r-itens").innerHTML =
+    '<tr class="itens__vazio"><td colspan="4">Os alimentos identificados aparecem aqui.</td></tr>';
+  document.getElementById("r-observacao").textContent = "";
+  status("Aguardando a foto do prato.");
+}
+
+btnAnalisar.addEventListener("click", analisar);
+
+async function analisar() {
   if (!fotoBlob) return mostrarErro("Tire ou envie a foto do prato.");
   const gramas = Number(peso.value);
   if (!gramas || gramas <= 0) {
@@ -127,7 +157,9 @@ btnAnalisar.addEventListener("click", async () => {
     return mostrarErro("Informe o peso do prato em gramas.");
   }
   limparErro();
-  estado("carregando");
+  if (btnAnalisar.disabled) return; // já está medindo
+  conteudo.classList.add("resultado__conteudo--medindo");
+  status("Medindo o prato...");
   btnAnalisar.disabled = true;
   btnAnalisar.textContent = "Analisando...";
 
@@ -139,19 +171,20 @@ btnAnalisar.addEventListener("click", async () => {
     const resp = await fetch("/api/raio-x/analisar", { method: "POST", body: form });
     const dados = await resp.json();
     if (!resp.ok) {
-      estado("vazio");
+      limparResultado();
       mostrarErro(dados.erro || "Não foi possível analisar o prato.");
       return;
     }
     renderizar(dados);
   } catch (e) {
-    estado("vazio");
+    limparResultado();
     mostrarErro("Sem conexão com o servidor. Verifique a internet e tente de novo.");
   } finally {
     btnAnalisar.disabled = false;
     btnAnalisar.textContent = "Analisar prato";
+    conteudo.classList.remove("resultado__conteudo--medindo");
   }
-});
+}
 
 function nivel(valor) {
   if (valor >= 80) return { classe: "alta", texto: "alta" };
@@ -166,7 +199,7 @@ function renderizar(r) {
   origem.className = "selo" + (r.origem === "ia" ? " selo--ia" : "");
 
   if (!r.e_prato_de_comida || r.itens.length === 0) {
-    estado("vazio");
+    limparResultado();
     mostrarErro(r.observacao || "Não foi possível identificar comida nesta foto. Tire outra foto do prato.");
     return;
   }
@@ -199,7 +232,7 @@ function renderizar(r) {
     [r.aviso, r.observacao, temNovo ? "* Item fora da lista: custo estimado pela categoria." : ""]
       .filter(Boolean).join(" ");
 
-  estado("conteudo");
+  status(`Prato medido: ${r.itens.length} alimento(s) identificado(s).`);
   if (window.innerWidth < 760) {
     document.getElementById("titulo-resultado").scrollIntoView({ behavior: "smooth", block: "start" });
   }

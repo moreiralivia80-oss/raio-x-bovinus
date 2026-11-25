@@ -32,16 +32,13 @@
 
       <section class="painel resultado" aria-labelledby="titulo-resultado" aria-live="polite">
         <h2 id="titulo-resultado">Resultado <span class="selo" id="origem" hidden></span></h2>
-        <div id="resultado-vazio" class="resultado__vazio">
-          <p>Tire a foto do prato, informe o peso e toque em <strong>Analisar prato</strong>.</p>
-        </div>
-        <div id="resultado-carregando" class="resultado__vazio" hidden><p>Analisando o prato...</p></div>
+        <p class="status" id="status" role="status">Aguardando a foto do prato.</p>
 
-        <div id="resultado-conteudo" hidden>
+        <div id="resultado-conteudo" class="resultado__conteudo">
           <div class="precisao" id="precisao">
             <div class="precisao__topo">
               <span>Precisão da análise</span>
-              <strong id="precisao-valor">0%</strong>
+              <strong id="precisao-valor">–</strong>
             </div>
             <div class="precisao__trilho"><div class="precisao__barra" id="precisao-barra"></div></div>
             <p class="precisao__texto" id="precisao-texto"></p>
@@ -56,7 +53,9 @@
           <table class="itens">
             <caption>O que tem no prato</caption>
             <thead><tr><th scope="col">Item</th><th scope="col">Parte do prato</th><th scope="col">Certeza</th><th scope="col">Custo</th></tr></thead>
-            <tbody id="r-itens"></tbody>
+            <tbody id="r-itens">
+              <tr class="itens__vazio"><td colspan="4">Os alimentos identificados aparecem aqui.</td></tr>
+            </tbody>
           </table>
           <p class="nota" id="r-observacao"></p>
         </div>
