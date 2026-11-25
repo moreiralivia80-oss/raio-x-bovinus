@@ -94,6 +94,7 @@ async function reduzirImagem(file) {
 for (const entrada of [arquivo, cameraNativa]) {
   entrada.addEventListener("change", async () => {
     if (!entrada.files[0]) return;
+    aviso.textContent = "Preparando a foto...";
     mostrarFoto(await reduzirImagem(entrada.files[0]));
     entrada.value = "";
   });

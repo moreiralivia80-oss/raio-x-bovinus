@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import random
+import re
 
 import requests
 
@@ -73,10 +74,37 @@ def _chamar_gemini(foto_bytes, mime, nomes_itens):
     )
     resposta.raise_for_status()
     texto = resposta.json()["candidates"][0]["content"]["parts"][0]["text"]
-    analise = json.loads(texto)
-    if not isinstance(analise.get("itens"), list):
+    return limpar_analise(json.loads(texto))
+
+
+def _numero(valor, padrao=0.0):
+    """Converte 35, "35", "35%" ou "35,5" em número. Se não der, usa o padrão."""
+    if isinstance(valor, (int, float)) and not isinstance(valor, bool):
+        return float(valor)
+    achado = re.search(r"-?\d+(?:[.,]\d+)?", str(valor or ""))
+    return float(achado.group().replace(",", ".")) if achado else padrao
+
+
+def limpar_analise(analise):
+    """Garante o formato esperado, mesmo se a IA responder de um jeito diferente."""
+    if not isinstance(analise, dict) or not isinstance(analise.get("itens"), list):
         raise ValueError("resposta sem lista de itens")
-    return analise
+    itens = []
+    for item in analise["itens"]:
+        if not isinstance(item, dict) or not str(item.get("nome") or "").strip():
+            continue
+        itens.append({
+            "nome": str(item["nome"]).strip()[:60],
+            "categoria": str(item.get("categoria") or "outro").strip().lower(),
+            "percentual": _numero(item.get("percentual")),
+            "confianca": _numero(item.get("confianca")),
+        })
+    return {
+        "e_prato_de_comida": analise.get("e_prato_de_comida", True) is not False,
+        "confianca_geral": _numero(analise.get("confianca_geral")),
+        "observacao": str(analise.get("observacao") or "")[:300],
+        "itens": itens,
+    }
 
 
 def analise_demonstracao(foto_bytes, nomes_itens):
