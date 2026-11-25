@@ -10,12 +10,18 @@ import json
 import os
 import random
 import re
+import time
 
 import requests
 
 URL = "https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent"
 # Tenta na ordem; se um nome de modelo não existir mais (erro 404), passa para o próximo.
-MODELOS_PADRAO = ["gemini-flash-latest", "gemini-3.8-flash", "gemini-3.6-flash", "gemini-2.5-flash"]
+MODELOS_PADRAO = [
+    "gemini-flash-latest", "gemini-3.8-flash", "gemini-3.6-flash",
+    "gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-2.5-flash",
+]
+ESPERA_SEGUNDOS = 1.5   # pausa antes de tentar de novo quando o Google está ocupado
+TEMPO_MAXIMO = 60       # segundos, somando todas as tentativas
 
 PROMPT = """Você é um especialista em identificar alimentos em fotos de pratos de um restaurante \
 self-service por quilo com churrascaria (Bovinu'S Grill & Beer, São Paulo). A foto é tirada \
@@ -100,7 +106,7 @@ SCHEMA = {
 }
 
 MOTIVOS = {400: "pedido recusado, confira a chave", 401: "chave inválida", 403: "chave sem permissão",
-           404: "modelo não encontrado", 429: "limite de uso atingido", 500: "erro no Google", 503: "Google indisponível"}
+           404: "modelo não encontrado", 429: "limite de uso atingido", 500: "erro no Google", 503: "Google sobrecarregado no momento"}
 
 
 def tem_chave():
@@ -150,23 +156,52 @@ def _corpo(foto_bytes, mime, nomes_itens, com_schema):
     }
 
 
+OCUPADO = (500, 502, 503, 504)   # Google sobrecarregado ou instável: vale tentar de novo
+
+
 def _chamar_gemini(foto_bytes, mime, nomes_itens):
+    """Tenta cada modelo da lista. Se o Google estiver ocupado, espera um pouco, tenta de novo
+    e depois passa para o próximo modelo. Só desiste quando nenhum responder."""
     ultimo_erro = None
+    inicio = time.monotonic()
     for modelo in modelos():
-        for com_schema in (True, False):
-            resposta = requests.post(
-                URL.format(modelo=modelo),
-                headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]},
-                json=_corpo(foto_bytes, mime, nomes_itens, com_schema),
-                timeout=45,
-            )
-            if resposta.status_code == 404:          # modelo não existe: tenta o próximo
-                ultimo_erro = requests.HTTPError("404", response=resposta)
+        if time.monotonic() - inicio > TEMPO_MAXIMO:   # não deixa a balança esperando demais
+            print("[gemini] tempo total esgotado, desistindo")
+            break
+        com_schema = True
+        tentativas_ocupado = 0
+        while True:
+            try:
+                resposta = requests.post(
+                    URL.format(modelo=modelo),
+                    headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]},
+                    json=_corpo(foto_bytes, mime, nomes_itens, com_schema),
+                    timeout=max(5, min(30, TEMPO_MAXIMO - (time.monotonic() - inicio))),
+                )
+            except requests.Timeout as erro:   # demorou demais: tenta o próximo modelo
+                ultimo_erro = erro
+                print(f"[gemini] {modelo}: tempo esgotado, tentando outro modelo")
                 break
-            if resposta.status_code == 400 and com_schema:  # formato recusado: tenta sem o schema
+            if resposta.status_code == 404:       # modelo não existe: próximo
+                ultimo_erro = requests.HTTPError("404", response=resposta)
+                print(f"[gemini] {modelo}: modelo não encontrado, tentando outro")
+                break
+            if resposta.status_code == 400 and com_schema:   # formato recusado: repete sem o schema
+                com_schema = False
                 continue
-            resposta.raise_for_status()
+            if resposta.status_code in OCUPADO:
+                ultimo_erro = requests.HTTPError(str(resposta.status_code), response=resposta)
+                tentativas_ocupado += 1
+                if tentativas_ocupado <= 1:        # espera e tenta o mesmo modelo mais uma vez
+                    print(f"[gemini] {modelo}: Google ocupado ({resposta.status_code}), tentando de novo")
+                    time.sleep(ESPERA_SEGUNDOS)
+                    continue
+                print(f"[gemini] {modelo}: continua ocupado, tentando outro modelo")
+                break
+            resposta.raise_for_status()           # 401, 403, 429...: erro definitivo
             texto = resposta.json()["candidates"][0]["content"]["parts"][0]["text"]
+            if modelo != modelos()[0]:
+                print(f"[gemini] respondeu com o modelo {modelo}")
             return limpar_analise(json.loads(texto))
     raise ultimo_erro or RuntimeError("nenhum modelo respondeu")
 
