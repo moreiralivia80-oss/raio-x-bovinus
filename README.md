@@ -66,13 +66,33 @@ Nunca coloque a chave no código nem envie para o GitHub.
 
 No computador (`localhost`), a câmera aparece ao vivo na própria página.
 
+## Painel do gerente
+
+Pelo menu **Área do gerente** (ou `http://localhost:5000/painel`). Login de demonstração: **gerente / bovinus2026** (troque com `PAINEL_USUARIO` e `PAINEL_SENHA` no `.env`).
+
+- **Pratos registrados pelo Raio-X:** cada prato analisado pela IA fica salvo com a **foto** e as **comidas** (em `dados/`, fora do GitHub). O painel mostra os **produtos mais consumidos**, o peso e o custo médio, a precisão média da IA e os últimos pratos com foto.
+- **Mix do prato, fila, limpeza das mesas e avaliações** (Google Forms, sincronizado a cada 2 minutos), com alertas automáticos.
+- Os toques na tela **Mesas** também alimentam a seção de limpeza do painel.
+
+Para apresentar com o painel cheio, gere 30 dias de dados de demonstração (uma vez):
+
+```bash
+python -m painel.simulador
+```
+
+Detalhes do painel em [`docs/painel/`](docs/painel/DOCUMENTACAO.md). Testes do painel: `python -m unittest discover testes`.
+
 ## Estrutura
 
 ```
 ├── app.py                 # servidor Flask e rotas
 ├── servicos/
 │   ├── gemini.py          # análise da foto com a IA
-│   └── custos.py          # custo dos itens, custo e margem do prato
+│   ├── custos.py          # custo dos itens, custo e margem do prato
+│   └── mesas.py           # tela de mesas (garçom)
+├── painel/                # painel do gerente (login, gráficos, Google Forms, pratos registrados)
+├── testes/                # testes do painel
+├── docs/painel/           # documentação do painel
 ├── templates/             # páginas HTML (base.html tem o menu)
 ├── static/
 │   ├── css/style.css      # identidade visual da Bovinu'S

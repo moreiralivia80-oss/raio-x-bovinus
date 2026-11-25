@@ -20,7 +20,7 @@
         <li><a href="{{ url_for('inicio') }}" {% if pagina == 'inicio' %}aria-current="page"{% endif %}>Início</a></li>
         <li><a href="{{ url_for('raio_x') }}" {% if pagina == 'raio_x' %}aria-current="page"{% endif %}>Raio-X do Prato</a></li>
         <li><a href="{{ url_for('mesas') }}" {% if pagina == 'mesas' %}aria-current="page"{% endif %}>Mesas</a></li>
-        <li><a class="menu__gerente" href="{{ url_for('gerente_login') }}" {% if pagina in ('gerente_login', 'gerente') %}aria-current="page"{% endif %}>Área do gerente</a></li>
+        <li><a class="menu__gerente" href="{{ url_for('painel.painel') }}" {% if pagina and pagina.startswith('painel.') %}aria-current="page"{% endif %}>Área do gerente</a></li>
       </ul>
     </nav>
     <div class="pilares" aria-hidden="true"></div>

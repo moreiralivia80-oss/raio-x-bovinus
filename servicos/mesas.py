@@ -26,6 +26,22 @@ def _conn():
     return sqlite3.connect(DB_PATH)
 
 
+def _avisar_painel(funcao, mesa):
+    """Repete o toque do garçom no banco do painel do gerente (seção Limpeza do salão).
+    Se o painel falhar, a tela de mesas continua funcionando normalmente."""
+    try:
+        from painel import banco as painel_banco, eventos as painel_eventos
+        con = painel_banco.conectar()
+        try:
+            painel_banco.criar_tabelas(con)
+            getattr(painel_eventos, funcao)(con, mesa)
+            con.commit()
+        finally:
+            con.close()
+    except Exception as erro:
+        print(f"[mesas] painel não atualizado ({funcao}, mesa {mesa}): {erro}")
+
+
 def criar_tabela():
     with _conn() as conn:
         conn.execute(
@@ -73,6 +89,7 @@ def alternar(mesa):
                 "INSERT INTO mesas_log (mesa, saiu_em) VALUES (?, ?)", (mesa, agora)
             )
             novo_estado = "suja"
+    _avisar_painel("mesa_saiu" if novo_estado == "suja" else "mesa_limpa", mesa)
     return jsonify({"mesa": mesa, "estado": novo_estado})
 
 
@@ -91,6 +108,7 @@ def desfazer():
             conn.execute("UPDATE mesas_log SET limpa_em = NULL WHERE id = ?", (id_,))
         else:       # último toque foi "cliente saiu" -> apaga o registro
             conn.execute("DELETE FROM mesas_log WHERE id = ?", (id_,))
+    _avisar_painel("mesa_desfazer", mesa)
     return jsonify({"mesa": mesa, "desfeito": True})
 
 

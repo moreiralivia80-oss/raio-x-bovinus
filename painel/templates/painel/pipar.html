@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Estação de pip | Bovinu'S</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('painel.static', filename='painel/painel.css') }}">
+</head>
+<body>
+  <header class="fachada">
+    <div class="fachada__barra">
+      <span class="letreiro">Bovinu'S<small>Estação de pip da comanda</small></span>
+      <div class="topo__acoes">
+        <span class="conexao" id="conexao" role="status"></span>
+        <a class="link-sec" href="{{ url_for('painel.garcom_tela') }}">Mesas (garçom)</a>
+      </div>
+    </div>
+    <div class="pilares" aria-hidden="true"></div>
+  </header>
+  <main class="pagina">
+    <form class="caixa-form pip" id="form">
+      <h1>Pipar comanda</h1>
+      <p class="subtitulo">Escolha onde este aparelho fica (fica salvo). Depois é só passar a comanda no leitor ou digitar o número e apertar Enter.</p>
+
+      <div class="pontos" role="group" aria-label="Ponto de leitura">
+        <button type="button" data-tipo="entrada">Entrada (entrega da comanda)</button>
+        <button type="button" data-tipo="balanca">Balança</button>
+        <button type="button" data-tipo="atendimento_mesa">Garçom na mesa</button>
+        <button type="button" data-tipo="pagamento">Caixa (pagamento)</button>
+      </div>
+
+      <div id="campo-mesa" hidden>
+        <label for="mesa">Mesa</label>
+        <input id="mesa" type="number" inputmode="numeric" min="1" max="90" placeholder="Ex.: 32">
+      </div>
+
+      <label for="codigo">Número da comanda</label>
+      <input class="pip__codigo" id="codigo" inputmode="numeric" autocomplete="off" required autofocus placeholder="000">
+      <button class="botao" type="submit">Registrar</button>
+
+      <div class="pip__retorno" id="retorno" role="status" hidden></div>
+      <ul class="pip__historico" id="historico" aria-label="Últimas leituras"></ul>
+    </form>
+  </main>
+  <script src="{{ url_for('painel.static', filename='painel/fila.js') }}"></script>
+  <script>
+    const NOMES = { entrada: "Entrada", balanca: "Balança", atendimento_mesa: "Garçom na mesa", pagamento: "Pagamento" };
+    let tipo = localStorage.getItem("bovinus_ponto") || "entrada";
+    const form = document.getElementById("form"), codigo = document.getElementById("codigo"),
+          mesa = document.getElementById("mesa"), retorno = document.getElementById("retorno"),
+          historico = document.getElementById("historico"), conexao = document.getElementById("conexao");
+
+    function marcar() {
+      document.querySelectorAll(".pontos button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.tipo === tipo));
+      document.getElementById("campo-mesa").hidden = tipo !== "atendimento_mesa";
+      mesa.required = tipo === "atendimento_mesa";
+    }
+    document.querySelectorAll(".pontos button").forEach((b) => b.addEventListener("click", () => {
+      tipo = b.dataset.tipo; localStorage.setItem("bovinus_ponto", tipo); marcar(); codigo.focus();
+    }));
+    marcar();
+
+    Fila.aoMudar((n) => {
+      conexao.textContent = n ? `Sem conexão: ${n} pip(s) guardado(s) no aparelho` : "";
+      conexao.className = "conexao" + (n ? " conexao--fila" : "");
+    });
+
+    function mostrar(texto, erro) {
+      retorno.className = "pip__retorno" + (erro ? " erro" : "");
+      retorno.textContent = texto;
+      retorno.hidden = false;
+      if (!erro) {
+        historico.insertAdjacentHTML("afterbegin", "<li></li>");
+        historico.firstElementChild.textContent = texto;
+        while (historico.children.length > 8) historico.lastElementChild.remove();
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const corpo = { codigo: codigo.value.trim(), tipo, ponto: NOMES[tipo] };
+      if (!corpo.codigo) return;
+      if (tipo === "atendimento_mesa") corpo.mesa = mesa.value;
+      const r = await Fila.enviar("/api/comanda/pipar", corpo);
+      if (r.offline) {
+        const hora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+        mostrar(`Comanda ${corpo.codigo}: leitura de ${NOMES[tipo].toLowerCase()} guardada às ${hora} (sem conexão). Será enviada sozinha quando a rede voltar.`);
+      } else if (!r.ok) {
+        mostrar(r.dados.erro || "Não foi possível registrar. Tente de novo.", true);
+        codigo.select();
+        return;
+      } else {
+        const d = r.dados;
+        let texto = `Comanda ${d.codigo}: leitura de ${NOMES[d.tipo].toLowerCase()} registrada às ${d.momento.slice(11, 16)}.`;
+        if (d.repetida) texto = `Comanda ${d.codigo}: leitura repetida, já estava registrada.`;
+        else {
+          if (d.minutos_desde_entrada != null) texto += ` ${String(d.minutos_desde_entrada).replace(".", ",")} min desde a entrada.`;
+          if (d.mesa_suja && !d.mesa_suja.ja_estava_suja) texto += ` Mesa ${d.mesa_suja.mesa} marcada para limpeza.`;
+          if (d.aviso) texto += ` ${d.aviso}`;
+        }
+        mostrar(texto);
+      }
+      codigo.value = "";
+      codigo.focus();
+    });
+  </script>
+</body>
+</html>

@@ -6,8 +6,9 @@ Rodar:
 Abrir: http://localhost:5000
 """
 import os
+import secrets
 
-from flask import Flask, jsonify, render_template, request, url_for
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 
 def carregar_env(caminho=".env"):
@@ -38,12 +39,16 @@ carregar_env()
 
 from servicos import custos, gemini  # noqa: E402  (depois do .env, para já ler a chave)
 from servicos.mesas import criar_tabela, mesas_bp  # noqa: E402
+from painel import bp as painel_bp, registrar_prato_do_raio_x  # noqa: E402
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # fotos de até 10 MB
+# chave da sessão (login do gerente). Sem SECRET_KEY no .env, o login vale até reiniciar o servidor.
+app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 
 criar_tabela()                      # cria a tabela de mesas no banco, se ainda não existir
 app.register_blueprint(mesas_bp)    # ativa as rotas /api/mesas/...
+app.register_blueprint(painel_bp)   # painel do gerente: /painel, /garcom, /pipar e a API do painel
 
 
 @app.context_processor
@@ -74,12 +79,12 @@ def mesas():
 
 @app.route("/gerente/login")
 def gerente_login():
-    return render_template("gerente_login.html")
+    return redirect(url_for("painel.login"))     # a área do gerente agora é o painel
 
 
 @app.route("/gerente")
 def gerente():
-    return render_template("gerente.html")
+    return redirect(url_for("painel.painel"))
 
 
 @app.route("/avaliacao")
@@ -107,6 +112,13 @@ def api_analisar():
     resultado = custos.calcular(peso_g, analise)
     resultado["origem"] = origem
     resultado["aviso"] = aviso
+    # guarda o prato (foto + comidas) para o painel do gerente; só pratos analisados pela IA
+    if origem == "ia" and resultado["itens"] and resultado.get("e_prato_de_comida", True):
+        try:
+            resultado["prato_id"] = registrar_prato_do_raio_x(
+                resultado, request.form.get("comanda"), foto_bytes)
+        except Exception as erro:  # registrar nunca pode atrapalhar a balança
+            print(f"[painel] não consegui registrar o prato: {erro}")
     return jsonify(resultado)
 
 

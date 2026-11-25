@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#5A3418">
+  <title>Mesas | Bovinu'S</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('painel.static', filename='painel/painel.css') }}">
+</head>
+<body class="garcom">
+  <header class="fachada">
+    <div class="fachada__barra">
+      <span class="letreiro">Bovinu'S<small>Mesas do salão</small></span>
+      <div class="topo__acoes">
+        <span class="conexao" id="conexao" role="status"></span>
+        <a class="link-sec" href="{{ url_for('painel.pipar_tela') }}">Estação de pip</a>
+      </div>
+    </div>
+    <div class="pilares" aria-hidden="true"></div>
+  </header>
+
+  <main class="pagina">
+    <p class="garcom__ajuda">Toque na mesa quando o <strong>cliente sair</strong> (fica vermelha) e de novo quando estiver <strong>limpa</strong> (fica verde). Mesas pagas no caixa ficam vermelhas sozinhas.</p>
+
+    <div class="garcom__barra">
+      <div class="periodo" role="group" aria-label="Salão">
+        <button type="button" data-salao="Todos">Todos</button>
+        <button type="button" data-salao="Inferior">Inferior</button>
+        <button type="button" data-salao="Principal">Principal</button>
+        <button type="button" data-salao="Superior">Superior</button>
+      </div>
+      <span class="garcom__contagem" id="contagem" aria-live="polite"></span>
+    </div>
+
+    <ul class="legenda legenda-mesas" aria-label="Legenda">
+      <li><i style="background:#E3F3E9;border:1px solid #9fd1b2"></i>Livre</li>
+      <li><i style="background:var(--serie-1-claro)"></i>Ocupada</li>
+      <li><i style="background:var(--aviso)"></i>Suja até 5 min</li>
+      <li><i style="background:var(--serio)"></i>5 a 10 min</li>
+      <li><i style="background:var(--critico)"></i>Mais de 10 min</li>
+    </ul>
+
+    <div id="saloes"></div>
+  </main>
+
+  <div class="aviso-toque" id="aviso" role="status" hidden>
+    <span id="aviso-texto"></span>
+    <button type="button" id="desfazer">Desfazer</button>
+  </div>
+
+  <script src="{{ url_for('painel.static', filename='painel/fila.js') }}"></script>
+  <script src="{{ url_for('painel.static', filename='painel/garcom.js') }}"></script>
+</body>
+</html>

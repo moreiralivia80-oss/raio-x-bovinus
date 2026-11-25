@@ -9,3 +9,6 @@ venv/
 
 # banco de dados local (cada um tem o seu)
 bovinus.db
+
+# banco e fotos do painel (ficam só no computador)
+dados/

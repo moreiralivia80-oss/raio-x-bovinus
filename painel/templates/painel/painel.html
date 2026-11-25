@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel do gerente | Bovinu'S</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('painel.static', filename='painel/painel.css') }}">
+</head>
+<body>
+  <header class="fachada">
+    <div class="fachada__barra">
+      <a class="letreiro" href="{{ url_for('painel.painel') }}">Bovinu'S<small>Painel do gerente</small></a>
+      <div class="topo__acoes">
+        <div class="periodo" role="group" aria-label="Período">
+          <button type="button" data-dias="1" aria-pressed="false">Hoje</button>
+          <button type="button" data-dias="7" aria-pressed="true">7 dias</button>
+          <button type="button" data-dias="30" aria-pressed="false">30 dias</button>
+        </div>
+        <span class="atualizado" id="atualizado" aria-live="polite">Carregando…</span>
+        <a class="link-sec" href="{{ url_for('painel.garcom_tela') }}">Mesas (garçom)</a>
+        <a class="link-sec" href="{{ url_for('painel.pipar_tela') }}">Estação de pip</a>
+        <a class="link-sec" href="{{ url_for('painel.sair') }}">Sair</a>
+      </div>
+    </div>
+    <div class="pilares" aria-hidden="true"></div>
+  </header>
+
+  <main class="pagina">
+    <h1>O salão em números</h1>
+    <p class="subtitulo" id="subtitulo">Custo do prato, fila, limpeza e opinião do cliente, atualizados a cada minuto.</p>
+    <p class="faixa-demo" id="faixa-demo" hidden>
+      <strong>Dados de demonstração.</strong> Gerados pelo simulador para mostrar o painel funcionando.
+      Ligue o Raio-X, a estação de pip, a tela das mesas e o formulário de avaliação para ver os dados reais do salão.
+    </p>
+
+    <ul class="alertas" id="alertas" aria-label="Alertas automáticos"></ul>
+
+    <!-- números do topo -->
+    <section class="numeros" id="numeros" aria-label="Resumo do período"></section>
+
+    <!-- Dor i: mix do prato -->
+    <section class="secao" aria-labelledby="t-mix">
+      <div class="secao__titulo"><span class="secao__dor">Dor 1</span><h2 id="t-mix">Mix do prato e custo</h2></div>
+      <p class="secao__texto">O Raio-X separa cada prato por item. Aqui aparece o que pesa no prato e o que pesa no custo: quando a barra laranja é maior que a azul, o item custa mais do que ocupa.</p>
+      <div class="grade grade--2">
+        <div class="cartao">
+          <h3>Participação no peso x no custo</h3>
+          <p class="descr">10 itens que mais custam no período</p>
+          <div class="grafico" id="g-mix"></div>
+        </div>
+        <div class="cartao">
+          <h3>Todos os itens do buffet</h3>
+          <p class="descr">Presença = em quantos pratos o item apareceu. Pouca saída indica cuba que volta cheia.</p>
+          <div class="rolagem"><table class="dados" id="t-itens"></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pratos registrados pelo Raio-X (foto + comidas) -->
+    <section class="secao" aria-labelledby="t-raiox">
+      <div class="secao__titulo"><span class="secao__dor">Raio-X</span><h2 id="t-raiox">Pratos registrados pelo Raio-X</h2></div>
+      <p class="secao__texto">Cada prato analisado na balança fica guardado com a foto e as comidas identificadas pela IA. Aqui aparece o que os clientes mais colocam no prato.</p>
+      <div class="raiox-numeros" id="raiox-numeros"></div>
+      <div class="grade grade--2">
+        <div class="cartao">
+          <h3>Produtos mais consumidos</h3>
+          <p class="descr">Em quantos pratos cada item apareceu no período</p>
+          <div class="grafico" id="g-consumidos"></div>
+        </div>
+        <div class="cartao">
+          <h3>Ranking dos produtos</h3>
+          <p class="descr">Pratos, quantidade servida, custo e a certeza média da IA</p>
+          <div class="rolagem"><table class="dados" id="t-consumidos"></table></div>
+        </div>
+      </div>
+      <div class="cartao raiox-ultimos-cartao">
+        <h3>Últimos pratos</h3>
+        <p class="descr">Os pratos mais recentes, com a foto da balança quando houver</p>
+        <ul class="raiox-ultimos" id="raiox-ultimos"></ul>
+      </div>
+    </section>
+
+    <!-- Dor ii: fila e tempo -->
+    <section class="secao" aria-labelledby="t-fila">
+      <div class="secao__titulo"><span class="secao__dor">Dor 2</span><h2 id="t-fila">Fila e tempo do cliente</h2></div>
+      <p class="secao__texto">A comanda é lida (pipada) na entrada e de novo na balança. A diferença é o tempo que o cliente leva para se servir, incluindo fila do buffet e da churrasqueira.</p>
+      <div class="grade grade--2">
+        <div class="cartao">
+          <h3>Minutos da entrada até a balança</h3>
+          <p class="descr">Por hora de chegada. O ponto mostra o tempo de 1 em cada 10 clientes (os que mais esperam).</p>
+          <div class="grafico" id="g-fila"></div>
+        </div>
+        <div class="cartao">
+          <h3>Clientes que entraram por hora</h3>
+          <p class="descr">Soma do período. Mostra quando reforçar churrasqueira, reposição e caixa.</p>
+          <div class="grafico" id="g-entradas"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dor iii: limpeza -->
+    <section class="secao" aria-labelledby="t-limpeza">
+      <div class="secao__titulo"><span class="secao__dor">Dor 3</span><h2 id="t-limpeza">Limpeza do salão</h2></div>
+      <p class="secao__texto">Tempo entre "cliente saiu" (pagamento da última comanda da mesa ou toque do garçom) e "mesa limpa" (toque do garçom na <a href="{{ url_for('painel.garcom_tela') }}">tela de mesas</a>). Mesas esquecidas como sujas por mais de 90 min ficam fora das médias.</p>
+      <p class="nota-limpeza" id="nota-limpeza" hidden></p>
+      <div class="grade grade--mapa">
+        <div class="cartao">
+          <h3>Mesas agora <a class="botao-sec" style="margin-left:8px" href="{{ url_for('painel.garcom_tela') }}">Abrir tela do garçom</a></h3>
+          <ul class="legenda legenda-mesas" aria-label="Legenda do mapa">
+            <li><i style="background:#f0efec"></i>Livre</li>
+            <li><i style="background:var(--serie-1-claro)"></i>Ocupada</li>
+            <li><i style="background:var(--aviso)"></i>Suja até 5 min</li>
+            <li><i style="background:var(--serio)"></i>5 a 10 min</li>
+            <li><i style="background:var(--critico)"></i>Mais de 10 min</li>
+          </ul>
+          <div class="mapa" id="mapa"></div>
+        </div>
+        <div class="grade">
+          <div class="cartao">
+            <h3>Minutos de mesa suja por salão</h3>
+            <p class="descr">Média do período; o ponto marca 1 em cada 10 mesas</p>
+            <div class="grafico" id="g-saloes"></div>
+          </div>
+          <div class="cartao">
+            <h3>Minutos de mesa suja por horário</h3>
+            <p class="descr">Hora em que o cliente saiu</p>
+            <div class="grafico" id="g-suja-hora"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dor iv: qualidade -->
+    <section class="secao" aria-labelledby="t-qualidade">
+      <div class="secao__titulo"><span class="secao__dor">Dor 4</span><h2 id="t-qualidade">Qualidade da comida e avaliação</h2></div>
+      <p class="secao__texto">Respostas do formulário de avaliação (Google Forms), lidas da planilha automaticamente a cada 2 minutos. Quando a resposta traz a comanda, a nota de espera é comparada com o tempo que o cliente realmente esperou.</p>
+      <div class="fonte-pesquisa" id="fonte-pesquisa">
+        <span id="fonte-texto">Carregando a pesquisa…</span>
+        <div class="periodo" role="group" aria-label="Quais respostas mostrar">
+          <button type="button" data-reais="0" aria-pressed="true">Todas</button>
+          <button type="button" data-reais="1" aria-pressed="false">Só da planilha</button>
+        </div>
+        <button type="button" class="botao-sec" id="sincronizar">Sincronizar agora</button>
+      </div>
+      <div class="grade grade--2 grade--topo">
+        <div class="grade">
+          <div class="cartao">
+            <h3>Elogios e críticas por item</h3>
+            <p class="descr">"Qual item você mais gostou?" x "Algum item não estava bom?"</p>
+            <div class="grafico" id="g-opiniao"></div>
+          </div>
+          <div class="cartao">
+            <h3>O que não estava bom nos itens</h3>
+            <p class="descr">Pergunta 6 do formulário, para quem criticou algum item</p>
+            <div class="grafico" id="g-motivos"></div>
+          </div>
+          <div class="cartao">
+            <h3>Assunto dos comentários</h3>
+            <p class="descr">Separado por palavras-chave (sem custo de IA)</p>
+            <div class="grafico" id="g-temas"></div>
+          </div>
+        </div>
+        <div class="grade">
+          <div class="cartao">
+            <h3>Nota de espera x tempo medido</h3>
+            <p class="descr">Minutos até a balança de quem deu cada nota de espera</p>
+            <div class="grafico" id="g-espera-nota"></div>
+          </div>
+          <div class="cartao">
+            <h3>Distribuição das notas</h3>
+            <p class="descr">Quantas respostas em cada nota, de 1 a 5: comida, tempo de espera e limpeza</p>
+            <div class="grafico" id="g-notas"></div>
+          </div>
+        </div>
+      </div>
+      <div class="cartao" style="margin-top:16px">
+        <h3>Comentários recentes</h3>
+        <ul class="comentarios" id="comentarios"></ul>
+      </div>
+    </section>
+
+    <!-- dados abertos -->
+    <section class="secao" aria-labelledby="t-dados">
+      <div class="secao__titulo"><h2 id="t-dados">Dados para o sistema da casa</h2></div>
+      <p class="secao__texto">Tudo que está no painel pode ser baixado em CSV (abre no Excel) ou lido pela API em JSON, para levar ao ERP ou ao Power BI.</p>
+      <div class="cartao">
+        <ul class="exportar">
+          <li><a href="{{ url_for('painel.exportar', nome='vw_jornada_cliente') }}">Jornada do cliente</a> (tempos por comanda)</li>
+          <li><a href="{{ url_for('painel.exportar', nome='vw_pratos') }}">Pratos</a> (peso, custo, margem)</li>
+          <li><a href="{{ url_for('painel.exportar', nome='vw_mix_itens') }}">Itens de cada prato</a></li>
+          <li><a href="{{ url_for('painel.exportar', nome='vw_tempo_mesa_suja') }}">Tempo de mesa suja</a></li>
+          <li><a href="{{ url_for('painel.exportar', nome='avaliacoes') }}">Avaliações</a></li>
+          <li><a href="{{ url_for('painel.exportar', nome='vw_opiniao_itens') }}">Elogios e críticas por item</a></li>
+          <li><a href="{{ url_for('painel.exportar', nome='itens_buffet') }}">Itens do buffet e custo por kg</a></li>
+          <li>JSON do painel: <code>/api/painel/dados?dias=7</code></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rodape" id="rodape">Painel Gerencial Bovinu'S · Hackathon Tech FMU 2026.2</footer>
+
+  <div class="dica" id="dica" role="tooltip" hidden></div>
+  <script src="{{ url_for('painel.static', filename='painel/graficos.js') }}"></script>
+  <script src="{{ url_for('painel.static', filename='painel/painel.js') }}"></script>
+</body>
+</html>
