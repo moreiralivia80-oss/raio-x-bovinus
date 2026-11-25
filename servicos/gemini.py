@@ -1,7 +1,7 @@
 """Análise da foto do prato com a API do Google Gemini.
 
 Configure a chave na variável de ambiente GEMINI_API_KEY (crie no Google AI Studio).
-Sem chave, o sistema funciona em MODO DEMONSTRAÇÃO, com uma análise de exemplo.
+Sem chave, nenhuma foto é analisada. Para ensaiar sem internet, use RAIOX_DEMO=1 (resultado de exemplo).
 O modelo pode ser trocado pela variável GEMINI_MODEL (confira o nome atual na documentação do Google).
 """
 import base64
@@ -107,23 +107,34 @@ def tem_chave():
     return bool(os.environ.get("GEMINI_API_KEY"))
 
 
+def demo_ligado():
+    """Resultado de exemplo só quando pedido de propósito (ex.: ensaio do pitch sem internet)."""
+    return os.environ.get("RAIOX_DEMO", "").strip() in ("1", "sim", "true")
+
+
 def modelos():
     escolhido = os.environ.get("GEMINI_MODEL")
     return [escolhido] if escolhido else MODELOS_PADRAO
 
 
 def analisar(foto_bytes, mime, nomes_itens):
-    """Devolve (analise, origem, aviso). origem = 'ia' ou 'demonstracao'."""
+    """Devolve (analise, origem, aviso).
+    origem = 'ia', 'demonstracao' ou 'erro'. Em 'erro', analise é None e nada é inventado."""
     if not tem_chave():
-        return analise_demonstracao(foto_bytes, nomes_itens), "demonstracao", None
+        if demo_ligado():
+            return analise_demonstracao(foto_bytes, nomes_itens), "demonstracao", None
+        return None, "erro", ("A IA está desligada, então a foto não foi analisada. "
+                              "Configure a chave do Gemini (GEMINI_API_KEY) e reinicie o servidor.")
     try:
         return _chamar_gemini(foto_bytes, mime, nomes_itens), "ia", None
-    except Exception as erro:  # a API falhou: segue em demonstração para não travar a balança
+    except Exception as erro:
         status = getattr(getattr(erro, "response", None), "status_code", None)
         motivo = MOTIVOS.get(status, erro.__class__.__name__)
         print(f"[gemini] erro: {erro}")
-        aviso = f"A IA não respondeu ({motivo}). Mostrando um resultado de exemplo."
-        return analise_demonstracao(foto_bytes, nomes_itens), "demonstracao", aviso
+        if demo_ligado():
+            return (analise_demonstracao(foto_bytes, nomes_itens), "demonstracao",
+                    f"A IA não respondeu ({motivo}). Mostrando um resultado de exemplo.")
+        return None, "erro", f"A IA não conseguiu analisar a foto ({motivo}). Tente de novo."
 
 
 def _corpo(foto_bytes, mime, nomes_itens, com_schema):

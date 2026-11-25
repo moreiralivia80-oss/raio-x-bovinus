@@ -29,7 +29,7 @@ Abra **http://localhost:5000** no navegador.
 
 ### Ativar a IA (Gemini)
 
-Sem chave, o sistema funciona em **modo demonstração** (resultado de exemplo). Para analisar fotos de verdade:
+Sem a chave, **nenhuma foto é analisada** e a página avisa "IA desligada". Para analisar fotos de verdade:
 
 1. Crie uma chave gratuita no [Google AI Studio](https://aistudio.google.com/apikey).
 2. Defina a variável de ambiente antes de rodar:
@@ -75,4 +75,8 @@ No computador (`localhost`), a câmera aparece ao vivo na própria página.
 
 - **Depois do Pull a página continua igual:** pare o servidor (Ctrl + C), rode `python app.py` de novo e atualize o navegador com **Ctrl + F5**.
 - **A câmera não aparece ao vivo no computador:** abra por `http://localhost:5000/raio-x`. Pelo endereço de rede (`http://192.168...`), o navegador bloqueia a câmera ao vivo; use **Enviar foto**.
-- **Aparecem alimentos numa foto que não é de comida:** a IA está desligada e o resultado é só um exemplo (a página avisa "IA desligada"). Configure a `GEMINI_API_KEY`.
+- **Aparece "IA desligada":** a chave do Gemini não foi configurada no terminal onde o servidor está rodando. Defina `GEMINI_API_KEY` e rode `python app.py` de novo.
+
+### Modo demonstração (opcional)
+
+Para ensaiar a apresentação sem internet, rode com `RAIOX_DEMO=1` (PowerShell: `$env:RAIOX_DEMO="1"`). Nesse modo os resultados são **exemplos** e a foto não é analisada; a página avisa isso.

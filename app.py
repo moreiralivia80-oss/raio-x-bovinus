@@ -23,7 +23,7 @@ def arquivos_estaticos():
         caminho = os.path.join(app.static_folder, nome)
         versao = int(os.path.getmtime(caminho)) if os.path.exists(caminho) else 0
         return url_for("static", filename=nome, v=versao)
-    return {"estatico": estatico, "ia_ligada": gemini.tem_chave()}
+    return {"estatico": estatico, "ia_ligada": gemini.tem_chave(), "demo_ligado": gemini.demo_ligado()}
 
 
 @app.route("/")
@@ -71,6 +71,8 @@ def api_analisar():
 
     foto_bytes = foto.read()
     analise, origem, aviso = gemini.analisar(foto_bytes, foto.mimetype, custos.nomes_itens())
+    if analise is None:  # sem IA: não inventa alimentos
+        return jsonify(erro=aviso), 503
     resultado = custos.calcular(peso_g, analise)
     resultado["origem"] = origem
     resultado["aviso"] = aviso
@@ -83,6 +85,11 @@ def foto_grande(_):
 
 
 if __name__ == "__main__":
-    modo = "IA (Gemini)" if gemini.tem_chave() else "demonstração (sem GEMINI_API_KEY)"
-    print(f"Raio-X Bovinu'S rodando em modo {modo}")
+    if gemini.tem_chave():
+        modo = "IA ligada (Gemini)"
+    elif gemini.demo_ligado():
+        modo = "DEMONSTRAÇÃO (resultados de exemplo, a foto não é analisada)"
+    else:
+        modo = "IA DESLIGADA: defina GEMINI_API_KEY para analisar as fotos"
+    print(f"Raio-X Bovinu'S: {modo}")
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)

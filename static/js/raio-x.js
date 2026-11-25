@@ -173,6 +173,7 @@ async function analisar() {
     const dados = await resp.json();
     if (!resp.ok) {
       limparResultado();
+      status("A foto não foi analisada.");
       mostrarErro(dados.erro || "Não foi possível analisar o prato.");
       return;
     }
@@ -201,6 +202,7 @@ function renderizar(r) {
 
   if (!r.e_prato_de_comida || r.itens.length === 0) {
     limparResultado();
+    status("Nenhum alimento identificado.");
     mostrarErro(r.observacao || "Não foi possível identificar comida nesta foto. Tire outra foto do prato.");
     return;
   }
