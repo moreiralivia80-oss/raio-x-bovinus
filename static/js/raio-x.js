@@ -14,7 +14,7 @@ const peso = document.getElementById("peso");
 const erro = document.getElementById("erro");
 const btnAnalisar = document.getElementById("btn-analisar");
 
-const LADO_MAXIMO = 1280; // reduz a foto antes de enviar (mais rápido no 4G)
+const LADO_MAXIMO = 1024; // reduz a foto antes de enviar (mais rápido no 4G e na IA)
 let fotoBlob = null;
 let cameraAoVivo = false;
 
@@ -160,7 +160,7 @@ async function analisar() {
   limparErro();
   if (btnAnalisar.disabled) return; // já está medindo
   conteudo.classList.add("resultado__conteudo--medindo");
-  status("Medindo o prato...");
+  status("Medindo o prato... a IA pode levar alguns segundos.");
   btnAnalisar.disabled = true;
   btnAnalisar.textContent = "Analisando...";
 

@@ -82,6 +82,8 @@ No computador (`localhost`), a câmera aparece ao vivo na própria página.
 
 ## Problemas comuns
 
+- **A IA não responde, demora ou dá erro:** rode `python diagnostico_ia.py` na pasta do projeto. Ele testa a conexão e a chave direto com o Google e mostra qual modelo responde e em quanto tempo.
+
 - **Depois do Pull a página continua igual:** pare o servidor (Ctrl + C), rode `python app.py` de novo e atualize o navegador com **Ctrl + F5**.
 - **A câmera não aparece ao vivo no computador:** abra por `http://localhost:5000/raio-x`. Pelo endereço de rede (`http://192.168...`), o navegador bloqueia a câmera ao vivo; use **Enviar foto**.
 - **Aparece "IA desligada":** a chave do Gemini não foi configurada no terminal onde o servidor está rodando. Defina `GEMINI_API_KEY` e rode `python app.py` de novo.

@@ -21,7 +21,8 @@ MODELOS_PADRAO = [
     "gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-2.5-flash",
 ]
 ESPERA_SEGUNDOS = 1.5   # pausa antes de tentar de novo quando o Google está ocupado
-TEMPO_MAXIMO = 60       # segundos, somando todas as tentativas
+TEMPO_POR_TENTATIVA = 45  # segundos para um modelo responder
+TEMPO_MAXIMO = 100        # segundos, somando todas as tentativas
 
 PROMPT = """Você é um especialista em identificar alimentos em fotos de pratos de um restaurante \
 self-service por quilo com churrascaria (Bovinu'S Grill & Beer, São Paulo). A foto é tirada \
@@ -118,9 +119,38 @@ def demo_ligado():
     return os.environ.get("RAIOX_DEMO", "").strip() in ("1", "sim", "true")
 
 
+_disponiveis = None
+
+
+def modelos_disponiveis():
+    """Pergunta ao Google (uma vez) quais modelos esta chave pode usar. Se falhar, devolve None."""
+    global _disponiveis
+    if _disponiveis is None:
+        try:
+            r = requests.get("https://generativelanguage.googleapis.com/v1beta/models",
+                             headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]},
+                             params={"pageSize": 1000}, timeout=10)
+            r.raise_for_status()
+            _disponiveis = {m["name"].split("/", 1)[1] for m in r.json().get("models", [])
+                            if "generateContent" in m.get("supportedGenerationMethods", [])}
+        except Exception as erro:
+            print(f"[gemini] não consegui listar os modelos ({erro.__class__.__name__}); usando a lista padrão")
+            _disponiveis = set()
+    return _disponiveis
+
+
 def modelos():
     escolhido = os.environ.get("GEMINI_MODEL")
-    return [escolhido] if escolhido else MODELOS_PADRAO
+    if escolhido:
+        return [escolhido]
+    disponiveis = modelos_disponiveis()
+    if not disponiveis:
+        return MODELOS_PADRAO
+    lista = [m for m in MODELOS_PADRAO if m in disponiveis]
+    # se nenhum da lista existir, usa qualquer "flash" que a chave tenha (exceto imagem/áudio/tts)
+    extras = sorted((m for m in disponiveis if "flash" in m and not any(
+        x in m for x in ("image", "tts", "audio", "live", "embedding"))), reverse=True)
+    return (lista + [m for m in extras if m not in lista])[:6] or MODELOS_PADRAO
 
 
 def analisar(foto_bytes, mime, nomes_itens):
@@ -135,7 +165,8 @@ def analisar(foto_bytes, mime, nomes_itens):
         return _chamar_gemini(foto_bytes, mime, nomes_itens), "ia", None
     except Exception as erro:
         status = getattr(getattr(erro, "response", None), "status_code", None)
-        motivo = MOTIVOS.get(status, erro.__class__.__name__)
+        motivo = MOTIVOS.get(status) or ("o Google demorou demais para responder"
+                                         if isinstance(erro, requests.Timeout) else erro.__class__.__name__)
         print(f"[gemini] erro: {erro}")
         if demo_ligado():
             return (analise_demonstracao(foto_bytes, nomes_itens), "demonstracao",
@@ -143,10 +174,24 @@ def analisar(foto_bytes, mime, nomes_itens):
         return None, "erro", f"A IA não conseguiu analisar a foto ({motivo}). Tente de novo."
 
 
-def _corpo(foto_bytes, mime, nomes_itens, com_schema):
+def _config_pensamento(modelo):
+    """Pede para o modelo pensar pouco: a resposta sai bem mais rápido.
+    Gemini 3 usa 'thinkingLevel'; Gemini 2.5 usa 'thinkingBudget'."""
+    if "2.5" in modelo:
+        return {"thinkingBudget": 0}
+    if "lite" in modelo:
+        return None
+    return {"thinkingLevel": "low"}
+
+
+def _corpo(foto_bytes, mime, nomes_itens, modelo, nivel):
+    """nivel 0: completo (schema + pensar pouco); 1: sem a config de pensamento; 2: sem schema."""
     config = {"responseMimeType": "application/json", "temperature": 0.1}
-    if com_schema:
+    if nivel <= 1:
         config["responseSchema"] = SCHEMA
+    pensamento = _config_pensamento(modelo)
+    if nivel == 0 and pensamento:
+        config["thinkingConfig"] = pensamento
     return {
         "contents": [{"parts": [
             {"text": PROMPT.format(itens=", ".join(nomes_itens))},
@@ -168,26 +213,27 @@ def _chamar_gemini(foto_bytes, mime, nomes_itens):
         if time.monotonic() - inicio > TEMPO_MAXIMO:   # não deixa a balança esperando demais
             print("[gemini] tempo total esgotado, desistindo")
             break
-        com_schema = True
+        nivel = 0
         tentativas_ocupado = 0
         while True:
             try:
                 resposta = requests.post(
                     URL.format(modelo=modelo),
                     headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]},
-                    json=_corpo(foto_bytes, mime, nomes_itens, com_schema),
-                    timeout=max(5, min(30, TEMPO_MAXIMO - (time.monotonic() - inicio))),
+                    json=_corpo(foto_bytes, mime, nomes_itens, modelo, nivel),
+                    timeout=max(5, min(TEMPO_POR_TENTATIVA, TEMPO_MAXIMO - (time.monotonic() - inicio))),
                 )
             except requests.Timeout as erro:   # demorou demais: tenta o próximo modelo
                 ultimo_erro = erro
-                print(f"[gemini] {modelo}: tempo esgotado, tentando outro modelo")
+                print(f"[gemini] {modelo}: não respondeu em {int(time.monotonic() - inicio)} s, tentando outro modelo")
                 break
             if resposta.status_code == 404:       # modelo não existe: próximo
                 ultimo_erro = requests.HTTPError("404", response=resposta)
                 print(f"[gemini] {modelo}: modelo não encontrado, tentando outro")
                 break
-            if resposta.status_code == 400 and com_schema:   # formato recusado: repete sem o schema
-                com_schema = False
+            if resposta.status_code == 400 and nivel < 2:   # opção não aceita por este modelo: simplifica
+                print(f"[gemini] {modelo}: pedido recusado (400), tentando versão mais simples")
+                nivel += 1
                 continue
             if resposta.status_code in OCUPADO:
                 ultimo_erro = requests.HTTPError(str(resposta.status_code), response=resposta)
@@ -200,8 +246,7 @@ def _chamar_gemini(foto_bytes, mime, nomes_itens):
                 break
             resposta.raise_for_status()           # 401, 403, 429...: erro definitivo
             texto = resposta.json()["candidates"][0]["content"]["parts"][0]["text"]
-            if modelo != modelos()[0]:
-                print(f"[gemini] respondeu com o modelo {modelo}")
+            print(f"[gemini] {modelo} respondeu em {time.monotonic() - inicio:.1f} s")
             return limpar_analise(json.loads(texto))
     raise ultimo_erro or RuntimeError("nenhum modelo respondeu")
 
