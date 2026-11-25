@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block titulo %}Raio-X do Prato{% endblock %}
+{% block conteudo %}
+  <main class="pagina raiox">
+    <h1>Raio-X do Prato</h1>
+    <p>Fotografe o prato na balança, informe o peso e veja o que tem nele e quanto custa.</p>
+
+    <div class="raiox__grade">
+      <section class="painel" aria-labelledby="titulo-captura">
+        <h2 id="titulo-captura">Prato na balança</h2>
+
+        <div class="camera" id="camera">
+          <video id="video" autoplay playsinline muted hidden></video>
+          <img id="foto" alt="Foto do prato" hidden>
+          <p class="camera__aviso" id="camera-aviso">Toque em Tirar foto. Enquadre só o prato.</p>
+        </div>
+
+        <div class="acoes">
+          <button class="botao-sec" type="button" id="btn-capturar">Tirar foto</button>
+          <label class="botao-sec" for="arquivo">Enviar foto</label>
+        </div>
+        <input type="file" id="arquivo" accept="image/*" hidden>
+        <input type="file" id="camera-nativa" accept="image/*" capture="environment" hidden>
+
+        <label class="campo" for="peso">Peso do prato
+          <span class="campo__unidade"><input id="peso" name="peso_g" type="number" inputmode="numeric" min="1" max="3000" placeholder="540"><span>g</span></span>
+        </label>
+        <p class="erro" id="erro" role="alert" hidden></p>
+
+        <button class="botao" type="button" id="btn-analisar">Analisar prato</button>
+      </section>
+
+      <section class="painel resultado" aria-labelledby="titulo-resultado" aria-live="polite">
+        <h2 id="titulo-resultado">Resultado <span class="selo" id="origem" hidden></span></h2>
+        <div id="resultado-vazio" class="resultado__vazio">
+          <p>Tire a foto do prato, informe o peso e toque em <strong>Analisar prato</strong>.</p>
+        </div>
+        <div id="resultado-carregando" class="resultado__vazio" hidden><p>Analisando o prato...</p></div>
+
+        <div id="resultado-conteudo" hidden>
+          <div class="precisao" id="precisao">
+            <div class="precisao__topo">
+              <span>Precisão da análise</span>
+              <strong id="precisao-valor">0%</strong>
+            </div>
+            <div class="precisao__trilho"><div class="precisao__barra" id="precisao-barra"></div></div>
+            <p class="precisao__texto" id="precisao-texto"></p>
+          </div>
+
+          <dl class="numeros">
+            <div><dt>Cliente paga</dt><dd id="r-receita">–</dd></div>
+            <div><dt>Custo estimado</dt><dd id="r-custo">–</dd></div>
+            <div class="numeros__margem"><dt>Margem</dt><dd id="r-margem">–</dd></div>
+          </dl>
+
+          <table class="itens">
+            <caption>O que tem no prato</caption>
+            <thead><tr><th scope="col">Item</th><th scope="col">Parte do prato</th><th scope="col">Certeza</th><th scope="col">Custo</th></tr></thead>
+            <tbody id="r-itens"></tbody>
+          </table>
+          <p class="nota" id="r-observacao"></p>
+        </div>
+      </section>
+    </div>
+  </main>
+{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/raio-x.js') }}"></script>
+{% endblock %}

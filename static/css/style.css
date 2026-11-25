@@ -1,0 +1,575 @@
+/* Raio-X Bovinu'S | identidade visual inspirada na fachada da casa:
+   letreiro vermelho sobre fachada branca, pilares de tijolo e caixilhos de madeira. */
+
+:root {
+  --vermelho: #B3141C;        /* letreiro */
+  --vermelho-escuro: #8A0F15;
+  --tijolo: #A4492F;          /* pilares */
+  --tijolo-claro: #C0654A;
+  --madeira: #5A3418;         /* caixilhos e porta */
+  --fachada: #F7F7F5;         /* reboco branco */
+  --concreto: #E4E2DE;
+  --vidro: #2B2E30;           /* vitrines */
+  --texto: #2B2420;
+  --texto-suave: #6B625C;
+
+  --fonte-letreiro: "Roboto Slab", "Rockwell", Georgia, serif;
+  --fonte-texto: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--fonte-texto);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--texto);
+  background: var(--fachada);
+}
+
+a { color: var(--vermelho); }
+
+:focus-visible {
+  outline: 3px solid var(--vermelho);
+  outline-offset: 3px;
+}
+
+/* ---------- Fachada (navbar) ---------- */
+
+.fachada {
+  background: #fff;
+  border-bottom: 1px solid var(--concreto);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.fachada__barra {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 72px;
+  gap: 24px;
+}
+
+.letreiro {
+  font-family: var(--fonte-letreiro);
+  font-weight: 800;
+  font-size: 1.75rem;
+  letter-spacing: 0.04em;
+  color: var(--vermelho);
+  text-decoration: none;
+  line-height: 1;
+}
+
+.letreiro small {
+  display: block;
+  font-family: var(--fonte-texto);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: var(--madeira);
+  margin-top: 4px;
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu a {
+  display: block;
+  padding: 10px 14px;
+  color: var(--texto);
+  text-decoration: none;
+  font-weight: 600;
+  border-bottom: 3px solid transparent;
+}
+
+.menu a:hover { color: var(--vermelho); }
+
+.menu a[aria-current="page"] {
+  color: var(--vermelho);
+  border-bottom-color: var(--vermelho);
+}
+
+.menu .menu__gerente {
+  margin-left: 8px;
+  background: var(--madeira);
+  color: #fff;
+  border-radius: 4px;
+  border-bottom: 0;
+}
+
+.menu .menu__gerente:hover,
+.menu .menu__gerente[aria-current="page"] {
+  background: var(--vermelho);
+  color: #fff;
+}
+
+/* faixa de pilares de tijolo com caixilhos de madeira, como a fachada */
+.pilares {
+  height: 10px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--tijolo) 0 56px,
+      var(--madeira) 56px 60px,
+      var(--vidro) 60px 140px,
+      var(--madeira) 140px 144px
+    );
+}
+
+.menu-botao {
+  display: none;
+  background: none;
+  border: 1px solid var(--concreto);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--texto);
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .menu-botao { display: block; }
+  .menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    background: #fff;
+    border-bottom: 1px solid var(--concreto);
+    padding: 8px 16px 16px;
+  }
+  .menu.aberto { display: flex; }
+  .menu a { border-bottom: 0; border-left: 3px solid transparent; }
+  .menu a[aria-current="page"] { border-left-color: var(--vermelho); }
+  .menu .menu__gerente { margin: 8px 0 0; text-align: center; }
+}
+
+/* ---------- Conteúdo ---------- */
+
+.pagina {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 48px 24px 72px;
+}
+
+.pagina h1 {
+  font-family: var(--fonte-letreiro);
+  font-weight: 700;
+  font-size: 2.25rem;
+  line-height: 1.15;
+  margin: 0 0 12px;
+  color: var(--texto);
+}
+
+.pagina > p { max-width: 62ch; color: var(--texto-suave); }
+
+.area-vazia {
+  margin-top: 32px;
+  min-height: 320px;
+  border: 2px dashed var(--concreto);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--texto-suave);
+  text-align: center;
+  padding: 24px;
+}
+
+/* ---------- Início ---------- */
+
+.inicio h1 { font-size: 2.75rem; max-width: 18ch; }
+
+.atalhos {
+  list-style: none;
+  padding: 0;
+  margin: 40px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  border-top: 1px solid var(--concreto);
+}
+
+.atalhos li { border-bottom: 1px solid var(--concreto); }
+
+.atalhos a {
+  display: block;
+  padding: 20px 16px 20px 0;
+  text-decoration: none;
+  color: var(--texto);
+}
+
+.atalhos strong {
+  display: block;
+  font-family: var(--fonte-letreiro);
+  font-size: 1.25rem;
+  color: var(--vermelho);
+}
+
+.atalhos span { color: var(--texto-suave); }
+
+.atalhos a:hover strong { text-decoration: underline; }
+
+/* ---------- Login do gerente ---------- */
+
+.login {
+  max-width: 380px;
+  margin: 32px 0 0;
+  background: #fff;
+  border: 1px solid var(--concreto);
+  border-top: 6px solid var(--madeira);
+  border-radius: 4px;
+  padding: 28px;
+}
+
+.login label { display: block; font-weight: 600; margin: 16px 0 6px; }
+.login label:first-child { margin-top: 0; }
+
+.login input {
+  width: 100%;
+  padding: 12px;
+  font: inherit;
+  border: 1px solid #C9C5BF;
+  border-radius: 4px;
+  background: var(--fachada);
+}
+
+.botao {
+  display: inline-block;
+  margin-top: 24px;
+  width: 100%;
+  padding: 12px 18px;
+  font: inherit;
+  font-weight: 700;
+  color: #fff;
+  background: var(--vermelho);
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.botao:hover { background: var(--vermelho-escuro); }
+
+/* ---------- Avaliação (página do cliente, sem menu) ---------- */
+
+.cliente .fachada { position: static; }
+.cliente .fachada__barra { justify-content: center; }
+.cliente .pagina { max-width: 560px; text-align: center; }
+.cliente .pagina > p { margin: 0 auto; }
+
+/* ---------- Rodapé ---------- */
+
+.rodape {
+  border-top: 1px solid var(--concreto);
+  padding: 20px 24px;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--texto-suave);
+}
+
+/* ---------- Raio-X do Prato ---------- */
+
+.raiox { max-width: 1120px; }
+
+.raiox__grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 24px;
+  margin-top: 28px;
+  align-items: start;
+}
+
+.painel {
+  background: #fff;
+  border: 1px solid var(--concreto);
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.painel h2 {
+  font-family: var(--fonte-letreiro);
+  font-size: 1.25rem;
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.camera {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--vidro);
+  border: 4px solid var(--madeira);
+}
+
+.camera video,
+.camera img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.camera__aviso {
+  position: absolute;
+  inset: auto 0 0 0;
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  color: #fff;
+  background: rgba(43, 46, 48, 0.75);
+}
+
+.acoes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.botao-sec {
+  display: block;
+  text-align: center;
+  padding: 11px 14px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--madeira);
+  background: #fff;
+  border: 1px solid var(--madeira);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.botao-sec:hover { background: var(--fachada); }
+
+.campo {
+  display: block;
+  font-weight: 600;
+  margin-top: 20px;
+}
+
+.campo__unidade {
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
+  border: 1px solid #C9C5BF;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.campo__unidade:focus-within { outline: 3px solid var(--vermelho); outline-offset: 2px; }
+
+.campo__unidade input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  padding: 12px;
+  font: inherit;
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: transparent;
+  outline: none;
+}
+
+.campo__unidade span {
+  padding: 0 14px;
+  color: var(--texto-suave);
+  font-weight: 600;
+}
+
+.selo {
+  font-family: var(--fonte-texto);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--madeira);
+  background: var(--fachada);
+  border: 1px solid var(--concreto);
+  border-radius: 99px;
+  padding: 2px 10px;
+}
+
+.numeros {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 0 0 24px;
+}
+
+.numeros div {
+  border-left: 4px solid var(--tijolo);
+  padding: 4px 0 4px 12px;
+}
+
+.numeros dt { font-size: 0.875rem; color: var(--texto-suave); }
+
+.numeros dd {
+  margin: 2px 0 0;
+  font-family: var(--fonte-letreiro);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.numeros__margem { border-left-color: var(--vermelho) !important; }
+.numeros__margem dd { color: var(--vermelho); }
+
+.itens {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.itens caption {
+  text-align: left;
+  font-weight: 600;
+  padding-bottom: 8px;
+}
+
+.itens th {
+  text-align: left;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+  border-bottom: 1px solid var(--concreto);
+  padding: 6px 8px 6px 0;
+}
+
+.itens td {
+  padding: 10px 8px 10px 0;
+  border-bottom: 1px solid var(--concreto);
+  white-space: nowrap;
+}
+
+.itens td:nth-child(2) { width: 50%; }
+.itens td:last-child, .itens th:last-child { text-align: right; padding-right: 0; }
+
+.barra {
+  display: inline-block;
+  vertical-align: middle;
+  width: calc(var(--p) * 1.6);
+  max-width: 70%;
+  height: 10px;
+  margin-right: 8px;
+  background: var(--tijolo);
+  border-radius: 2px;
+}
+
+.nota { font-size: 0.875rem; color: var(--texto-suave); margin: 14px 0 0; }
+
+@media (max-width: 760px) {
+  .pagina { padding: 28px 16px 56px; }
+  .pagina h1 { font-size: 1.85rem; }
+  .raiox__grade { grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 20px; }
+  .painel { padding: 18px; }
+  .numeros { grid-template-columns: 1fr 1fr; }
+  .numeros__margem { grid-column: 1 / -1; }
+  .botao { padding: 14px 18px; font-size: 1.05rem; }
+}
+@media (max-width: 760px) {
+  .itens td { white-space: normal; }
+  .itens td:nth-child(2) { width: 40%; white-space: nowrap; }
+  .barra { width: calc(var(--p) * 1.1); }
+}
+
+/* ---------- Raio-X: estados e precisão ---------- */
+
+[hidden] { display: none !important; }
+
+.resultado__vazio {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--texto-suave);
+  border: 2px dashed var(--concreto);
+  border-radius: 6px;
+  padding: 24px;
+}
+
+.erro {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--vermelho);
+  background: #FBECEC;
+  color: var(--vermelho-escuro);
+  font-weight: 600;
+}
+
+.erro[hidden] { display: none; }
+
+.botao:disabled { opacity: 0.7; cursor: progress; }
+
+.selo--ia { color: #fff; background: var(--madeira); border-color: var(--madeira); }
+
+.precisao { margin-bottom: 22px; }
+
+.precisao__topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.precisao__topo strong { font-family: var(--fonte-letreiro); font-size: 1.15rem; }
+
+.precisao__trilho {
+  height: 12px;
+  background: var(--concreto);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.precisao__barra { height: 100%; width: 0; border-radius: 99px; transition: width 0.6s ease; }
+
+.precisao--alta .precisao__barra { background: #2F7D4F; }
+.precisao--media .precisao__barra { background: #C27A12; }
+.precisao--baixa .precisao__barra { background: var(--vermelho); }
+.precisao--alta strong { color: #2F7D4F; }
+.precisao--media strong { color: #9A600C; }
+.precisao--baixa strong { color: var(--vermelho); }
+
+.precisao__texto { margin: 6px 0 0; font-size: 0.875rem; color: var(--vermelho-escuro); }
+.precisao__texto:empty { display: none; }
+
+.certeza {
+  display: inline-block;
+  min-width: 46px;
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  border-radius: 99px;
+  padding: 2px 8px;
+}
+
+.certeza--alta { background: #E3F3E9; color: #22603C; }
+.certeza--media { background: #FBEFDC; color: #7A4C09; }
+.certeza--baixa { background: #FBE3E3; color: var(--vermelho-escuro); }
+
+.item-novo { color: var(--tijolo); font-weight: 700; }
+
+@media (prefers-reduced-motion: reduce) {
+  .precisao__barra { transition: none; }
+}
+
+@media (max-width: 760px) {
+  .itens { font-size: 0.875rem; }
+  .itens td:nth-child(2) { width: 34%; }
+  .barra { width: calc(var(--p) * 1.1); max-width: 40px; }
+}

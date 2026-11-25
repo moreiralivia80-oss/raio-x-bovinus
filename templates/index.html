@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block titulo %}Início{% endblock %}
+{% block conteudo %}
+  <main class="pagina inicio">
+    <h1>Raio-X Bovinu'S</h1>
+    <p>O que acontece no salão, em números: o que vai em cada prato, quanto tempo as mesas ficam sujas e o que os clientes acham da refeição.</p>
+    <ul class="atalhos">
+      <li><a href="{{ url_for('raio_x') }}"><strong>Raio-X do Prato</strong><span>Foto do prato na balança</span></a></li>
+      <li><a href="{{ url_for('mesas') }}"><strong>Mesas</strong><span>Marcar mesa suja e limpa</span></a></li>
+      <li><a href="{{ url_for('gerente_login') }}"><strong>Área do gerente</strong><span>Painel com custos, notas e tempos</span></a></li>
+    </ul>
+  </main>
+{% endblock %}
