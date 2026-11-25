@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Início | Raio-X Bovinu'S</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="fachada">
+    <nav class="fachada__barra" aria-label="Menu principal">
+      <a class="letreiro" href="index.html">Bovinu'S<small>Grill &amp; Beer Augusta</small></a>
+      <button class="menu-botao" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
+      <ul class="menu" id="menu">
+        <li><a href="index.html" aria-current="page">Início</a></li>
+        <li><a href="raio-x.html">Raio-X do Prato</a></li>
+        <li><a href="mesas.html">Mesas</a></li>
+        <li><a class="menu__gerente" href="gerente-login.html">Área do gerente</a></li>
+      </ul>
+    </nav>
+    <div class="pilares" aria-hidden="true"></div>
+  </header>
+  <main class="pagina inicio">
+    <h1>Raio-X Bovinu'S</h1>
+    <p>O que acontece no salão, em números: o que vai em cada prato, quanto tempo as mesas ficam sujas e o que os clientes acham da refeição.</p>
+    <ul class="atalhos">
+      <li><a href="raio-x.html"><strong>Raio-X do Prato</strong><span>Foto do prato na balança</span></a></li>
+      <li><a href="mesas.html"><strong>Mesas</strong><span>Marcar mesa suja e limpa</span></a></li>
+      <li><a href="gerente-login.html"><strong>Área do gerente</strong><span>Painel com custos, notas e tempos</span></a></li>
+    </ul>
+  </main>
+  <footer class="rodape">Raio-X Bovinu'S, projeto do Hackathon Tech FMU 2026.2</footer>
+  <script src="js/menu.js"></script>
+</body>
+</html>
