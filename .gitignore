@@ -1,9 +1,0 @@
-__pycache__/
-*.pyc
-.venv/
-venv/
-.streamlit/secrets.toml
-data/*.db
-.vscode/
-.idea/
-.DS_Store
