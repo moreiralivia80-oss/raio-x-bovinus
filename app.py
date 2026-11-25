@@ -13,8 +13,15 @@ from flask import Flask, jsonify, render_template, request, url_for
 def carregar_env(caminho=".env"):
     """Lê o arquivo .env (CHAVE=valor) e coloca nas variáveis de ambiente.
     O .env fica só no seu computador: ele está no .gitignore e não vai para o GitHub."""
-    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), caminho)
+    pasta = os.path.dirname(os.path.abspath(__file__))
+    caminho = os.path.join(pasta, caminho)
     if not os.path.exists(caminho):
+        # primeira vez: cria o .env vazio a partir do modelo, só para colar a chave
+        modelo = os.path.join(pasta, ".env.example")
+        if os.path.exists(modelo):
+            with open(modelo, encoding="utf-8") as origem, open(caminho, "w", encoding="utf-8") as destino:
+                destino.write(origem.read())
+            print("Arquivo .env criado na pasta do projeto. Cole a chave do Gemini nele e rode de novo.")
         return
     with open(caminho, encoding="utf-8-sig") as arquivo:
         for linha in arquivo:

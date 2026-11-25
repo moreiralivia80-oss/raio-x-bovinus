@@ -32,13 +32,14 @@ Abra **http://localhost:5000** no navegador.
 Sem a chave, **nenhuma foto é analisada** e a página avisa "IA desligada". Para analisar fotos de verdade:
 
 1. Crie uma chave gratuita no [Google AI Studio](https://aistudio.google.com/apikey).
-2. Copie o arquivo `.env.example` com o nome **`.env`** e cole a chave depois do `=`:
+2. Rode `python app.py` uma vez. O arquivo **`.env`** aparece sozinho na pasta do projeto.
+3. Abra o `.env`, cole a chave depois do `=` e salve:
 
 ```
 GEMINI_API_KEY=sua-chave-aqui
 ```
 
-3. Rode `python app.py`. O terminal deve mostrar **IA ligada (Gemini)**.
+4. Rode `python app.py` de novo. O terminal deve mostrar **IA ligada (Gemini)**.
 
 O `.env` fica só no seu computador e não vai para o GitHub. Se preferir, também dá para definir a variável no terminal:
 
