@@ -7,12 +7,23 @@ Abrir: http://localhost:5000
 """
 import os
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, url_for
 
 from servicos import custos, gemini
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # fotos de até 10 MB
+
+
+@app.context_processor
+def arquivos_estaticos():
+    """estatico('js/raio-x.js') gera o link com a data do arquivo.
+    Assim o navegador sempre baixa a versão nova depois de um Pull, sem precisar limpar o cache."""
+    def estatico(nome):
+        caminho = os.path.join(app.static_folder, nome)
+        versao = int(os.path.getmtime(caminho)) if os.path.exists(caminho) else 0
+        return url_for("static", filename=nome, v=versao)
+    return {"estatico": estatico, "ia_ligada": gemini.tem_chave()}
 
 
 @app.route("/")

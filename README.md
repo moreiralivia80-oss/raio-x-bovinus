@@ -70,3 +70,9 @@ No computador (`localhost`), a câmera aparece ao vivo na própria página.
 │   └── js/                # menu e câmera do Raio-X
 └── requirements.txt
 ```
+
+## Problemas comuns
+
+- **Depois do Pull a página continua igual:** pare o servidor (Ctrl + C), rode `python app.py` de novo e atualize o navegador com **Ctrl + F5**.
+- **A câmera não aparece ao vivo no computador:** abra por `http://localhost:5000/raio-x`. Pelo endereço de rede (`http://192.168...`), o navegador bloqueia a câmera ao vivo; use **Enviar foto**.
+- **Aparecem alimentos numa foto que não é de comida:** a IA está desligada e o resultado é só um exemplo (a página avisa "IA desligada"). Configure a `GEMINI_API_KEY`.

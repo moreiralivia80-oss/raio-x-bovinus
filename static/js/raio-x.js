@@ -81,6 +81,7 @@ btnCapturar.addEventListener("click", () => {
     return;
   }
   if (!video.videoWidth) return;
+  aviso.textContent = "Capturando...";
   const canvas = document.createElement("canvas");
   const escala = Math.min(1, LADO_MAXIMO / Math.max(video.videoWidth, video.videoHeight));
   canvas.width = Math.round(video.videoWidth * escala);
@@ -229,10 +230,19 @@ function renderizar(r) {
 
   const temNovo = r.itens.some((i) => !i.custo_conhecido);
   document.getElementById("r-observacao").textContent =
-    [r.aviso, r.observacao, temNovo ? "* Item fora da lista: custo estimado pela categoria." : ""]
+    [r.observacao, temNovo ? "* Item fora da lista: custo estimado pela categoria." : ""]
       .filter(Boolean).join(" ");
 
-  status(`Prato medido: ${r.itens.length} alimento(s) identificado(s).`);
+  if (r.origem === "ia") {
+    status(`Prato medido: ${r.itens.length} alimento(s) identificado(s).`);
+  } else {
+    status("Resultado de exemplo: a foto não foi analisada pela IA.");
+    if (r.aviso) {
+      const avisoDemo = document.getElementById("aviso-demo");
+      avisoDemo.textContent = r.aviso;
+      avisoDemo.hidden = false;
+    }
+  }
   if (window.innerWidth < 760) {
     document.getElementById("titulo-resultado").scrollIntoView({ behavior: "smooth", block: "start" });
   }

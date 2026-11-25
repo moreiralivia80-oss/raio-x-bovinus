@@ -14,34 +14,102 @@ import re
 import requests
 
 URL = "https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent"
-MODELO_PADRAO = "gemini-2.5-flash"
+# Tenta na ordem; se um nome de modelo não existir mais (erro 404), passa para o próximo.
+MODELOS_PADRAO = ["gemini-flash-latest", "gemini-3.8-flash", "gemini-3.6-flash", "gemini-2.5-flash"]
 
 PROMPT = """Você é um especialista em identificar alimentos em fotos de pratos de um restaurante \
-self-service por quilo com churrascaria (Bovinu'S, São Paulo).
+self-service por quilo com churrascaria (Bovinu'S Grill & Beer, São Paulo). A foto é tirada \
+de cima, com o prato em cima da balança.
 
-Analise a foto e identifique CADA alimento visível no prato.
-Itens comuns no buffet: {itens}.
-Use exatamente um desses nomes quando o alimento corresponder; se for outro alimento, use um nome curto em português.
+PRIMEIRO, decida se a foto mostra um prato com comida.
+Se for uma pessoa, um rosto, um objeto, uma tela, um prato vazio ou qualquer coisa que não seja \
+comida servida: responda "e_prato_de_comida": false, "itens": [], "confianca_geral": 0 e, em \
+"observacao", diga de forma genérica o que aparece (ex.: "A foto mostra uma pessoa, não um prato.").
+Se uma pessoa estiver segurando o prato, analise apenas a comida.
 
-Para cada alimento, informe:
-- "nome": nome do alimento
-- "categoria": uma entre carne, acompanhamento, salada, quente, sobremesa, outro
-- "percentual": quanto do PESO do prato esse alimento representa (todos somando 100)
-- "confianca": de 0 a 100, o quanto você tem certeza de que identificou esse alimento corretamente
+SE FOR UM PRATO, identifique cada alimento VISÍVEL usando este guia visual do buffet:
 
-Informe também:
-- "confianca_geral": de 0 a 100, a precisão geral da análise (considere nitidez, iluminação, \
-alimentos sobrepostos ou escondidos)
-- "e_prato_de_comida": true ou false
-- "observacao": uma frase curta em português sobre a qualidade da foto ou algo que atrapalhou
+Carnes do grill
+- Picanha: fatias em meia-lua, rosadas ou vermelhas por dentro, com uma faixa grossa de gordura branca em uma das bordas.
+- Fraldinha: fatias com fibras longas e paralelas bem marcadas, pouca gordura, cor mais escura.
+- Maminha: fatias macias, fibras curtas, gordura fina na borda.
+- Costela: pedaços escuros e caramelizados, com osso ou desfiados, gordura entremeada.
+- Cupim: fatias marmorizadas, com aspecto gelatinoso e fibras irregulares.
+- Linguiça: rodelas ou gomos cilíndricos com pele brilhante, interior rosado e granulado.
+- Frango: coxa ou sobrecoxa com pele dourada, ou pedaços de carne branca.
+- Coração de frango: pequenos, escuros, em formato de gota.
+- Peixe: carne branca que se separa em lascas.
 
-Responda SOMENTE com JSON neste formato:
-{{"e_prato_de_comida": true, "confianca_geral": 80, "observacao": "...",
- "itens": [{{"nome": "Picanha", "categoria": "carne", "percentual": 35, "confianca": 90}}]}}"""
+Acompanhamentos
+- Arroz: grãos brancos (ou levemente amarelados), alongados e soltos, formando um monte claro.
+- Feijão: grãos arredondados em caldo marrom (carioca) ou preto (feijão preto); o caldo costuma escorrer \
+e manchar o arroz. Não confunda com molho de carne, que é liso e sem grãos.
+- Farofa: farinha granulada e seca, amarelo-clara a dourada, às vezes com pedacinhos de bacon ou ovo.
+- Batata frita: palitos amarelo-dourados.
+- Mandioca: pedaços grandes, branco-amarelados e fibrosos.
+- Macarrão: tiras ou tubos de massa, geralmente com molho.
+
+Saladas
+- Salada verde: folhas (alface, rúcula, agrião).
+- Tomate: rodelas ou gomos vermelhos inteiros.
+- Vinagrete: cubinhos de tomate, cebola e pimentão misturados, úmidos.
+- Maionese: salada de batata cremosa e branca, com cubos.
+- Legumes: cenoura, beterraba, brócolis, vagem e similares.
+
+Pratos quentes e sobremesas
+- Estrogonofe: molho cremoso bege-rosado com pedaços de carne ou frango.
+- Lasanha: camadas de massa com molho e queijo gratinado.
+- Pudim: creme amarelo com calda de caramelo.
+- Mousse: creme aerado (chocolate ou maracujá).
+
+Nomes que você deve usar quando o alimento corresponder: {itens}.
+Para outros alimentos, use um nome curto em português.
+
+REGRAS
+1. Liste apenas o que dá para ver. Não invente alimentos escondidos.
+2. "percentual" é a parte do PESO do prato, não da área. Carnes, feijão e arroz são densos; folhas \
+ocupam muito espaço e pesam pouco. Os percentuais somam 100.
+3. "confianca" (0 a 100) de cada item: use 90 ou mais só quando o alimento for inconfundível. \
+Diminua quando estiver coberto por molho, misturado com outro, pequeno, escuro ou borrado.
+4. "confianca_geral" (0 a 100): precisão do conjunto, considerando nitidez, luz, ângulo e alimentos sobrepostos.
+5. "categoria": carne, acompanhamento, salada, quente, sobremesa ou outro.
+6. "observacao": uma frase curta em português sobre o que atrapalhou ou ajudou a análise."""
+
+SCHEMA = {
+    "type": "OBJECT",
+    "properties": {
+        "e_prato_de_comida": {"type": "BOOLEAN"},
+        "confianca_geral": {"type": "NUMBER"},
+        "observacao": {"type": "STRING"},
+        "itens": {
+            "type": "ARRAY",
+            "items": {
+                "type": "OBJECT",
+                "properties": {
+                    "nome": {"type": "STRING"},
+                    "categoria": {"type": "STRING",
+                                  "enum": ["carne", "acompanhamento", "salada", "quente", "sobremesa", "outro"]},
+                    "percentual": {"type": "NUMBER"},
+                    "confianca": {"type": "NUMBER"},
+                },
+                "required": ["nome", "categoria", "percentual", "confianca"],
+            },
+        },
+    },
+    "required": ["e_prato_de_comida", "confianca_geral", "observacao", "itens"],
+}
+
+MOTIVOS = {400: "pedido recusado, confira a chave", 401: "chave inválida", 403: "chave sem permissão",
+           404: "modelo não encontrado", 429: "limite de uso atingido", 500: "erro no Google", 503: "Google indisponível"}
 
 
 def tem_chave():
     return bool(os.environ.get("GEMINI_API_KEY"))
+
+
+def modelos():
+    escolhido = os.environ.get("GEMINI_MODEL")
+    return [escolhido] if escolhido else MODELOS_PADRAO
 
 
 def analisar(foto_bytes, mime, nomes_itens):
@@ -51,30 +119,45 @@ def analisar(foto_bytes, mime, nomes_itens):
     try:
         return _chamar_gemini(foto_bytes, mime, nomes_itens), "ia", None
     except Exception as erro:  # a API falhou: segue em demonstração para não travar a balança
-        aviso = f"A IA não respondeu ({erro.__class__.__name__}). Mostrando análise de demonstração."
+        status = getattr(getattr(erro, "response", None), "status_code", None)
+        motivo = MOTIVOS.get(status, erro.__class__.__name__)
         print(f"[gemini] erro: {erro}")
+        aviso = f"A IA não respondeu ({motivo}). Mostrando um resultado de exemplo."
         return analise_demonstracao(foto_bytes, nomes_itens), "demonstracao", aviso
 
 
-def _chamar_gemini(foto_bytes, mime, nomes_itens):
-    modelo = os.environ.get("GEMINI_MODEL", MODELO_PADRAO)
-    corpo = {
+def _corpo(foto_bytes, mime, nomes_itens, com_schema):
+    config = {"responseMimeType": "application/json", "temperature": 0.1}
+    if com_schema:
+        config["responseSchema"] = SCHEMA
+    return {
         "contents": [{"parts": [
             {"text": PROMPT.format(itens=", ".join(nomes_itens))},
-            {"inline_data": {"mime_type": mime or "image/jpeg",
-                             "data": base64.b64encode(foto_bytes).decode()}},
+            {"inlineData": {"mimeType": mime or "image/jpeg", "data": base64.b64encode(foto_bytes).decode()}},
         ]}],
-        "generationConfig": {"response_mime_type": "application/json", "temperature": 0.2},
+        "generationConfig": config,
     }
-    resposta = requests.post(
-        URL.format(modelo=modelo),
-        headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]},
-        json=corpo,
-        timeout=45,
-    )
-    resposta.raise_for_status()
-    texto = resposta.json()["candidates"][0]["content"]["parts"][0]["text"]
-    return limpar_analise(json.loads(texto))
+
+
+def _chamar_gemini(foto_bytes, mime, nomes_itens):
+    ultimo_erro = None
+    for modelo in modelos():
+        for com_schema in (True, False):
+            resposta = requests.post(
+                URL.format(modelo=modelo),
+                headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]},
+                json=_corpo(foto_bytes, mime, nomes_itens, com_schema),
+                timeout=45,
+            )
+            if resposta.status_code == 404:          # modelo não existe: tenta o próximo
+                ultimo_erro = requests.HTTPError("404", response=resposta)
+                break
+            if resposta.status_code == 400 and com_schema:  # formato recusado: tenta sem o schema
+                continue
+            resposta.raise_for_status()
+            texto = resposta.json()["candidates"][0]["content"]["parts"][0]["text"]
+            return limpar_analise(json.loads(texto))
+    raise ultimo_erro or RuntimeError("nenhum modelo respondeu")
 
 
 def _numero(valor, padrao=0.0):
@@ -122,6 +205,6 @@ def analise_demonstracao(foto_bytes, nomes_itens):
     return {
         "e_prato_de_comida": True,
         "confianca_geral": rnd.randint(65, 90),
-        "observacao": "Modo demonstração: configure a chave do Gemini para analisar a foto de verdade.",
+        "observacao": "",
         "itens": itens,
     }

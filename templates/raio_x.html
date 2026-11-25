@@ -33,6 +33,11 @@
       <section class="painel resultado" aria-labelledby="titulo-resultado" aria-live="polite">
         <h2 id="titulo-resultado">Resultado <span class="selo" id="origem" hidden></span></h2>
         <p class="status" id="status" role="status">Aguardando a foto do prato.</p>
+        {% if not ia_ligada %}
+        <p class="aviso-demo" id="aviso-demo"><strong>IA desligada.</strong> Sem a chave do Gemini, o resultado é só um exemplo e a foto não é analisada. Veja no README como ligar.</p>
+        {% else %}
+        <p class="aviso-demo" id="aviso-demo" hidden></p>
+        {% endif %}
 
         <div id="resultado-conteudo" class="resultado__conteudo">
           <div class="precisao" id="precisao">
@@ -64,5 +69,5 @@
   </main>
 {% endblock %}
 {% block scripts %}
-  <script src="{{ url_for('static', filename='js/raio-x.js') }}"></script>
+  <script src="{{ estatico('js/raio-x.js') }}"></script>
 {% endblock %}

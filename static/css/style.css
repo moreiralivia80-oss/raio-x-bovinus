@@ -585,3 +585,12 @@ a { color: var(--vermelho); }
 @media (prefers-reduced-motion: reduce) {
   .resultado__conteudo { transition: none; }
 }
+
+.aviso-demo {
+  margin: 0 0 18px;
+  padding: 10px 12px;
+  border-left: 4px solid #C27A12;
+  background: #FBEFDC;
+  color: #6A4207;
+  font-size: 0.9375rem;
+}
