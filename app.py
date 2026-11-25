@@ -9,7 +9,27 @@ import os
 
 from flask import Flask, jsonify, render_template, request, url_for
 
-from servicos import custos, gemini
+
+def carregar_env(caminho=".env"):
+    """Lê o arquivo .env (CHAVE=valor) e coloca nas variáveis de ambiente.
+    O .env fica só no seu computador: ele está no .gitignore e não vai para o GitHub."""
+    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), caminho)
+    if not os.path.exists(caminho):
+        return
+    with open(caminho, encoding="utf-8-sig") as arquivo:
+        for linha in arquivo:
+            linha = linha.strip()
+            if not linha or linha.startswith("#") or "=" not in linha:
+                continue
+            chave, valor = linha.split("=", 1)
+            valor = valor.strip().strip('"').strip("'")
+            if valor:
+                os.environ.setdefault(chave.strip(), valor)
+
+
+carregar_env()
+
+from servicos import custos, gemini  # noqa: E402  (depois do .env, para já ler a chave)
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # fotos de até 10 MB
