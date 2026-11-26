@@ -11,7 +11,7 @@ O Raio-X Bovinu'S transforma o que acontece no salão em dados: uma câmera na b
 | | |
 |---|---|
 | **Vídeo demonstrativo (até 2 min)** | _[cole aqui o link do vídeo]_ |
-| **Apresentação (5 slides)** | _[cole aqui o link ou adicione `docs/apresentacao.pdf`]_ |
+| **Apresentação (5 slides)** | [Slides do Raio-X Bovinu'S](https://claude.ai/artifact/Q4DQye1yDdBSmKDkxt4gNb) |
 | **Código-fonte** | este repositório |
 
 ## Equipe
@@ -19,8 +19,8 @@ O Raio-X Bovinu'S transforma o que acontece no salão em dados: uma câmera na b
 | Integrante | Responsabilidade principal |
 |---|---|
 | **Lívia Moreira Teixeira** | Raio-X do Prato, integração com a IA (Gemini), integração do sistema e GitHub |
-| **Lucas Freitas** | _[descreva]_ |
-| **Leonardo Lima** | _[descreva]_ |
+| **Lucas Freitas** | Controle de limpeza das mesas: tela do garçom, desfazer, análise do tempo de mesa suja e exportação em CSV |
+| **Leonardo Lima** | Painel do gerente completo: login, métricas e alertas automáticos, leitura do Google Forms, estação de pip da comanda e simulador de dados |
 
 ---
 
