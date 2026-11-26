@@ -10,7 +10,7 @@ O Raio-X Bovinu'S transforma o que acontece no salão em dados: uma câmera na b
 
 | | |
 |---|---|
-| **Vídeo demonstrativo (até 2 min)** | _[cole aqui o link do vídeo]_ |
+| **Vídeo demonstrativo (até 2 min)** | _[(https://youtu.be/iakfqLB6BhI)]_ |
 | **Apresentação (5 slides)** | [docs/apresentacao.pdf](docs/apresentacao.pdf) |
 | **Código-fonte** | este repositório |
 
