@@ -48,8 +48,8 @@ Uma câmera na balança fotografa o prato. A **IA do Google Gemini** identifica 
 ### Controle das mesas
 O garçom vê as 90 mesas no celular. Um toque marca **"cliente saiu"** (vermelha) e outro marca **"limpa"** (verde). O sistema mede o **tempo de mesa suja** por horário e por mesa, com botão de desfazer e exportação em CSV.
 
-### Avaliação do cliente (Google Forms)
-QR Code na mesa: *"Ao final da refeição, se puder, avalie sua experiência. A Bovinu'S agradece!"*. O cliente dá nota para a **comida**, o **tempo de espera** e a **limpeza**, e marca **de qual item mais gostou e qual não estava bom**. As respostas entram no painel sozinhas a cada 2 minutos.
+### Avaliação do cliente (QR Code + Google Forms)
+Cada mesa tem um **QR Code** com a mensagem *"Ao final da refeição, se puder, avalie sua experiência. A Bovinu'S agradece!"*. Ele abre um **Google Forms** no celular do cliente, sem instalar nada. O cliente dá nota para a **comida**, o **tempo de espera** e a **limpeza**, e marca **de quais itens mais gostou e qual não estava bom**. As respostas caem numa planilha do Google, e o painel do gerente lê essa planilha sozinho a cada 2 minutos. Explicação completa na [seção 3](#3-avaliação-do-cliente-qr-code-e-google-forms).
 
 ### Painel do gerente
 Área com login que junta tudo:
@@ -64,7 +64,71 @@ QR Code na mesa: *"Ao final da refeição, se puder, avalie sua experiência. A 
 - **Os dados vêm da rotina, sem ninguém digitar planilhas**: a foto na balança, um toque do garçom, o QR Code na mesa.
 - **O sistema diz o que fazer**: os alertas transformam números em decisões (reforçar a limpeza num salão, revisar um prato criticado, acompanhar o item que pesa no custo).
 
-## 3. Capturas de tela
+## 3. Avaliação do cliente: QR Code e Google Forms
+
+É assim que a opinião de cada cliente chega ao gerente.
+
+<p align="center"><img src="assets/qrcode-avaliacao.png" alt="QR Code da avaliação do cliente" width="220"></p>
+
+| | |
+|---|---|
+| **QR Code (vai em cada mesa)** | [`assets/qrcode-avaliacao.png`](assets/qrcode-avaliacao.png), que abre o formulário |
+| **Formulário (o que o cliente vê)** | [Como foi sua experiência na Bovinu'S?](https://docs.google.com/forms/d/e/1FAIpQLSf2jxQKY8YI2Gnoww9kzohfGfKNzp3PTugP1MecZRGB6oZxuQ/viewform) |
+| **Planilha de respostas (o que o sistema lê)** | [Respostas do formulário](https://docs.google.com/spreadsheets/d/1XTmWoDvZiKXfRDBuAWlE5j5tTUdJ3kxGXqxXPjlmr0s/edit?usp=sharing) |
+
+### O caminho de uma avaliação
+
+```mermaid
+sequenceDiagram
+    actor Cliente
+    participant QR as QR Code na mesa
+    participant Forms as Google Forms
+    participant Planilha as Planilha de respostas
+    participant Sistema as Raio-X Bovinu'S (painel/planilha.py)
+    participant Banco as SQLite (avaliacoes)
+    actor Gerente
+    Cliente->>QR: aponta a câmera do celular
+    QR->>Forms: abre o formulário (menos de 1 minuto para responder)
+    Cliente->>Forms: notas, itens e comentário
+    Forms->>Planilha: grava a resposta numa nova linha
+    loop a cada 2 minutos (ou no botão "Sincronizar agora")
+        Sistema->>Planilha: baixa a planilha em CSV
+        Sistema->>Banco: grava só as respostas novas
+    end
+    Gerente->>Sistema: abre o painel (Área do gerente)
+    Sistema-->>Gerente: notas, elogios e críticas por item, comentários e alertas
+```
+
+### As perguntas do formulário
+
+| # | Pergunta | Respostas | Vai para o banco como |
+|---|---|---|---|
+| 1 | Como você avalia a comida? | 5 Excelente a 1 Muito Ruim | `nota_comida` |
+| 2 | Como você avalia o tempo de espera? (fila do buffet, da churrasqueira e atendimento na mesa) | 5 Muito Rápido a 1 Muito Demorado | `nota_espera` |
+| 3 | Como você avalia a limpeza da mesa e do salão? | 5 Impecável a 1 Muito Suja | `nota_limpeza` |
+| 4 | Quais itens você mais gostou hoje? | Picanha, Linguiça, Frango, Arroz, Feijão, Feijoada, Massas, Folhas, Legumes, Pudim, Frutas ou "Nenhum em especial" | `avaliacao_itens` (opinião `gostou`) |
+| 5 | Algum item não estava bom? | Os mesmos itens ou "Estava tudo bom" | `avaliacao_itens` (opinião `nao_gostou`) |
+| 6 | Quer nos contar mais alguma coisa? | Texto livre (opcional) | `comentario` e `tema` (comida, espera, limpeza, atendimento ou outro) |
+
+O sistema reconhece cada coluna da planilha **pelo texto da pergunta** (por exemplo, "comida" vira `nota_comida`). Por isso o formulário pode ganhar perguntas novas, como "Mesa" ou "Número da comanda", sem mudar o código. As regras estão em [`painel/planilha.py`](painel/planilha.py).
+
+### O que aparece no painel do gerente
+
+- **Nota média** da comida, da espera e da limpeza, comparada com o período anterior.
+- **Elogios e críticas por item:** quais pratos mais agradam e quais precisam de atenção.
+- **Temas dos comentários** e os **últimos comentários** dos clientes.
+- **Alertas automáticos**, por exemplo *"Mandioca não agrada: 9 críticas contra 2 elogios"*.
+- Botão **"Sincronizar agora"**, para ler a planilha na hora (útil na apresentação).
+
+### Regras para funcionar
+
+- A planilha precisa estar em **Compartilhar → Qualquer pessoa com o link → Leitor**. Sem isso, o sistema não consegue ler as respostas.
+- Cada resposta é importada **uma vez só**, mesmo que o sistema leia a planilha várias vezes.
+- Para usar outra planilha: coloque o link dela em `PLANILHA_AVALIACOES` no `.env`. Para desligar a leitura: `PLANILHA_AVALIACOES=desligado`.
+- Sem internet, o painel continua funcionando com as respostas que já foram importadas.
+- As respostas são **anônimas**: o formulário não pede nome, e-mail nem telefone.
+
+## 4. Capturas de tela
 
 | | |
 |---|---|
@@ -74,7 +138,7 @@ QR Code na mesa: *"Ao final da refeição, se puder, avalie sua experiência. A 
 
 > As telas do painel mostram **dados de demonstração** gerados pelo simulador (o próprio painel avisa isso no topo).
 
-## 4. Arquitetura
+## 5. Arquitetura
 
 ```mermaid
 flowchart LR
@@ -104,7 +168,7 @@ flowchart LR
 
 **Fluxo do Raio-X:** a foto é reduzida no navegador (1024 px) → enviada ao Flask com o peso → o Gemini devolve os alimentos, a % do peso e a certeza de cada um → o sistema calcula `peso × % × custo do kg` de cada item → custo e margem do prato → tudo é salvo no SQLite com a foto.
 
-## 5. Banco de dados
+## 6. Banco de dados
 
 SQLite, em um único arquivo (`dados/bovinus.db`). Script completo em [`painel/schema.sql`](painel/schema.sql). Dicionário de dados em [`docs/painel/DICIONARIO_DE_DADOS.md`](docs/painel/DICIONARIO_DE_DADOS.md).
 
@@ -181,7 +245,7 @@ erDiagram
     }
 ```
 
-## 6. Tecnologias e decisões técnicas
+## 7. Tecnologias e decisões técnicas
 
 | Tecnologia | Por quê |
 |---|---|
@@ -196,7 +260,7 @@ erDiagram
 
 **Segurança:** a chave da IA fica no arquivo `.env`, que **não vai para o GitHub**. Senhas do painel e chave da sessão também são configuradas pelo `.env`.
 
-## 7. Como executar
+## 8. Como executar
 
 Pré-requisito: **Python 3.10 ou mais novo**.
 
@@ -215,16 +279,37 @@ python app.py
 3. Rode `python app.py` de novo. O terminal deve mostrar **"IA ligada (Gemini)"**.
 4. (Opcional) Para o painel abrir com 30 dias de dados de demonstração: `python -m painel.simulador`
 
-### Endereços
+### Caminhos do sistema (endereços)
 
-| Tela | Endereço |
+Todos começam com `http://localhost:5000` no computador, ou com `http://IP-DO-COMPUTADOR:5000` no celular (mesmo Wi-Fi; o IP aparece no terminal na linha `Running on http://192.168...`).
+
+**Páginas**
+
+| Caminho | Página | Quem usa |
+|---|---|---|
+| `/` | Início, com o menu | Todos |
+| `/raio-x` | Raio-X do Prato: foto + peso → alimentos, certeza da IA, custo e margem | Funcionário da balança |
+| `/mesas` | Mesas: cliente saiu (vermelha) / limpa (verde), desfazer e análise | Garçom (celular) |
+| `/painel` | Painel do gerente (pede login: usuário `gerente`, senha `bovinus2026`) | Gerente |
+| `/painel/login` e `/painel/sair` | Entrar e sair da área do gerente | Gerente |
+| `/garcom` | Mesas do painel: funciona sem internet, desfazer por 2 minutos | Garçom (alternativa) |
+| `/pipar` | Estação de leitura da comanda: entrada, balança, mesa e caixa (próximo passo: medir a fila) | Funcionários |
+| [Google Forms](https://docs.google.com/forms/d/e/1FAIpQLSf2jxQKY8YI2Gnoww9kzohfGfKNzp3PTugP1MecZRGB6oZxuQ/viewform) | Avaliação, aberta pelo QR Code da mesa | Cliente |
+
+`/gerente` e `/gerente/login` são endereços antigos e levam ao painel.
+
+**API (usada pelas páginas)**
+
+| Método e caminho | O que faz |
 |---|---|
-| Início | http://localhost:5000 |
-| Raio-X do Prato | http://localhost:5000/raio-x |
-| Mesas (garçom) | http://localhost:5000/mesas |
-| Painel do gerente | http://localhost:5000/painel (usuário `gerente`, senha `bovinus2026`) |
-
-**No celular:** use o mesmo Wi-Fi do computador e abra `http://IP-DO-COMPUTADOR:5000/raio-x`. O IP aparece no terminal na linha `Running on http://192.168...`.
+| `POST /api/raio-x/analisar` | Recebe a foto e o peso, chama a IA, calcula custo e margem e registra o prato |
+| `GET /api/mesas/estado` · `POST /api/mesas/<n>/alternar` · `POST /api/mesas/desfazer` | Tela de mesas: situação, marcar suja/limpa e desfazer |
+| `GET /api/mesas/resumo` · `GET /api/mesas/exportar.csv` | Análise das mesas e exportação em CSV |
+| `GET /api/painel/dados?dias=7` | Tudo o que o painel mostra, em JSON (gerente) |
+| `POST /api/painel/sincronizar` | Lê a planilha do Google Forms na hora (gerente) |
+| `GET /api/painel/exportar/<tabela>.csv` | Tabelas do banco em CSV para Excel ou Power BI (gerente) |
+| `GET /painel/foto/<id>` | Foto de um prato registrado (só o gerente logado) |
+| `POST /api/comanda/pipar` · `POST /api/avaliacoes` · `POST /api/pratos` | Entradas extras do painel: comanda, avaliação e prato por outros sistemas |
 
 ### Configurações (arquivo `.env`)
 
@@ -238,7 +323,7 @@ python app.py
 
 > Os custos por kg dos itens e o preço de venda são **fictícios**, apenas para demonstração, e devem ser trocados pelos valores reais da Bovinu'S.
 
-## 8. Testes
+## 9. Testes
 
 ```bash
 python -m unittest discover testes     # 32 testes do painel (não acessam a internet)
@@ -247,22 +332,23 @@ python diagnostico_ia.py               # testa a conexão e a chave com o Google
 
 Durante o desenvolvimento também testamos o Raio-X (validações, contas de custo e margem, respostas da IA em formatos inesperados, Google sobrecarregado, troca automática de modelo), a câmera no computador e no celular, a tela de mesas e a integração com o painel.
 
-## 9. Problemas comuns
+## 10. Problemas comuns
 
 - **A IA não responde ou demora:** rode `python diagnostico_ia.py` e veja qual modelo responde e em quanto tempo.
 - **Aparece "IA desligada":** a chave não está no `.env`. Cole a chave e rode `python app.py` de novo.
 - **A câmera não aparece ao vivo no computador:** abra por `http://localhost:5000/raio-x`. Pelo endereço de rede, o navegador bloqueia a câmera ao vivo. Use **Enviar foto**.
 - **Depois do Pull a página continua igual:** pare o servidor (Ctrl + C), rode de novo e atualize com **Ctrl + F5**.
 
-## 10. Próximos passos
+## 11. Próximos passos
 
 - **Integração com a balança e o PDV** da casa, para o peso entrar automaticamente.
 - **Estação de leitura da comanda** (`/pipar`, já implementada): medir o tempo de fila da entrada até a balança e o tempo até o garçom atender a mesa.
 - **Foto do prato devolvido** para medir as sobras e o desperdício.
+- **Um QR Code por mesa** (link pré-preenchido do Google Forms com o número da mesa), para cruzar a nota do cliente com o tempo de limpeza daquela mesa.
 - **Alerta de reposição das cubas** a partir do consumo por item e por horário.
 - Custos reais por kg cadastrados pelo gerente no próprio painel.
 
-## 11. Estrutura do repositório
+## 12. Estrutura do repositório
 
 ```
 raio-x-bovinus/
@@ -277,6 +363,7 @@ raio-x-bovinus/
 ├── testes/                 # testes do painel
 ├── docs/painel/            # documentação técnica e dicionário de dados do painel
 ├── assets/prints/          # capturas de tela
+├── assets/qrcode-avaliacao.png  # QR Code da avaliação (vai em cada mesa)
 ├── diagnostico_ia.py       # teste de conexão com a IA
 ├── .env.example            # modelo do arquivo de configuração (sem chave)
 └── requirements.txt
