@@ -5,6 +5,9 @@
 **A Bovinu'S sabe quanto cada prato pesa, mas não sabe o que foi servido, quanto tempo as mesas ficam sujas nem o que o cliente achou da comida.**
 O Raio-X Bovinu'S transforma o que acontece no salão em dados: uma câmera na balança identifica cada alimento do prato com IA, o garçom marca as mesas com um toque, o cliente avalia pelo QR Code da mesa e o gerente vê tudo em um painel com alertas automáticos.
 
+> [!NOTE]
+> **Este é um protótipo funcional (MVP)**, construído nas 48 horas do hackathon para validar a ideia com a Bovinu'S. Ele **vai ser alterado e evoluído**: funciona no **computador e no celular**, e pode ficar **muito mais detalhado e preciso** com um **período de homologação** no restaurante, com dados reais do salão e **ajustes guiados pelo feedback dos donos e da equipe**. Veja a [seção 12](#12-do-protótipo-à-operação-homologação-e-próximos-passos).
+
 | | |
 |---|---|
 | **Vídeo demonstrativo (até 2 min)** | _[cole aqui o link do vídeo]_ |
@@ -20,6 +23,23 @@ O Raio-X Bovinu'S transforma o que acontece no salão em dados: uma câmera na b
 | **Leonardo Lima** | _[descreva]_ |
 
 ---
+
+## Sumário
+
+- [1. O desafio](#1-o-desafio)
+- [2. A solução](#2-a-solução)
+- [3. Avaliação do cliente: QR Code e Google Forms](#3-avaliação-do-cliente-qr-code-e-google-forms)
+- [4. Funciona no celular](#4-funciona-no-celular)
+- [5. Capturas de tela](#5-capturas-de-tela)
+- [6. Arquitetura](#6-arquitetura)
+- [7. Banco de dados](#7-banco-de-dados)
+- [8. Tecnologias e decisões técnicas](#8-tecnologias-e-decisões-técnicas)
+- [9. Como executar](#9-como-executar)
+- [10. Testes](#10-testes)
+- [11. Problemas comuns](#11-problemas-comuns)
+- [12. Do protótipo à operação: homologação e próximos passos](#12-do-protótipo-à-operação-homologação-e-próximos-passos)
+- [13. Estrutura do repositório](#13-estrutura-do-repositório)
+- [Agradecimentos](#agradecimentos)
 
 ## 1. O desafio
 
@@ -128,7 +148,22 @@ O sistema reconhece cada coluna da planilha **pelo texto da pergunta** (por exem
 - Sem internet, o painel continua funcionando com as respostas que já foram importadas.
 - As respostas são **anônimas**: o formulário não pede nome, e-mail nem telefone.
 
-## 4. Capturas de tela
+## 4. Funciona no celular
+
+O sistema é um site: **abre no navegador de qualquer celular, tablet ou computador**, sem instalar aplicativo. Cada tela foi pensada para o aparelho de quem usa:
+
+| Quem | Aparelho | Tela | Como funciona no celular |
+|---|---|---|---|
+| Funcionário da balança | Tablet, celular ou computador com câmera | Raio-X do Prato | "Tirar foto" abre a **câmera do próprio aparelho**; a foto é reduzida antes de enviar, para ficar rápido no 4G |
+| Garçom | Celular | Mesas | Botões grandes, um toque por mesa, atualiza sozinho a cada 5 segundos |
+| Cliente | O próprio celular | Avaliação (Google Forms) | Lê o QR Code da mesa com a câmera; responde em menos de 1 minuto |
+| Gerente | Computador ou celular | Painel do gerente | Os gráficos e tabelas se reorganizam para telas pequenas |
+
+**Como abrir no celular hoje (protótipo):** o celular precisa estar no **mesmo Wi-Fi** do computador que roda o sistema. Abra `http://IP-DO-COMPUTADOR:5000` (o IP aparece no terminal quando o sistema inicia).
+
+**Na operação real:** o sistema fica publicado num servidor com endereço próprio e **HTTPS**. Assim ele abre de qualquer lugar e a câmera também aparece ao vivo dentro da página no celular (hoje, sem HTTPS, o navegador abre a câmera do aparelho para tirar a foto).
+
+## 5. Capturas de tela
 
 | | |
 |---|---|
@@ -138,7 +173,7 @@ O sistema reconhece cada coluna da planilha **pelo texto da pergunta** (por exem
 
 > As telas do painel mostram **dados de demonstração** gerados pelo simulador (o próprio painel avisa isso no topo).
 
-## 5. Arquitetura
+## 6. Arquitetura
 
 ```mermaid
 flowchart LR
@@ -168,7 +203,7 @@ flowchart LR
 
 **Fluxo do Raio-X:** a foto é reduzida no navegador (1024 px) → enviada ao Flask com o peso → o Gemini devolve os alimentos, a % do peso e a certeza de cada um → o sistema calcula `peso × % × custo do kg` de cada item → custo e margem do prato → tudo é salvo no SQLite com a foto.
 
-## 6. Banco de dados
+## 7. Banco de dados
 
 SQLite, em um único arquivo (`dados/bovinus.db`). Script completo em [`painel/schema.sql`](painel/schema.sql). Dicionário de dados em [`docs/painel/DICIONARIO_DE_DADOS.md`](docs/painel/DICIONARIO_DE_DADOS.md).
 
@@ -245,7 +280,7 @@ erDiagram
     }
 ```
 
-## 7. Tecnologias e decisões técnicas
+## 8. Tecnologias e decisões técnicas
 
 | Tecnologia | Por quê |
 |---|---|
@@ -260,7 +295,7 @@ erDiagram
 
 **Segurança:** a chave da IA fica no arquivo `.env`, que **não vai para o GitHub**. Senhas do painel e chave da sessão também são configuradas pelo `.env`.
 
-## 8. Como executar
+## 9. Como executar
 
 Pré-requisito: **Python 3.10 ou mais novo**.
 
@@ -323,7 +358,7 @@ Todos começam com `http://localhost:5000` no computador, ou com `http://IP-DO-C
 
 > Os custos por kg dos itens e o preço de venda são **fictícios**, apenas para demonstração, e devem ser trocados pelos valores reais da Bovinu'S.
 
-## 9. Testes
+## 10. Testes
 
 ```bash
 python -m unittest discover testes     # 32 testes do painel (não acessam a internet)
@@ -332,23 +367,48 @@ python diagnostico_ia.py               # testa a conexão e a chave com o Google
 
 Durante o desenvolvimento também testamos o Raio-X (validações, contas de custo e margem, respostas da IA em formatos inesperados, Google sobrecarregado, troca automática de modelo), a câmera no computador e no celular, a tela de mesas e a integração com o painel.
 
-## 10. Problemas comuns
+## 11. Problemas comuns
 
 - **A IA não responde ou demora:** rode `python diagnostico_ia.py` e veja qual modelo responde e em quanto tempo.
 - **Aparece "IA desligada":** a chave não está no `.env`. Cole a chave e rode `python app.py` de novo.
 - **A câmera não aparece ao vivo no computador:** abra por `http://localhost:5000/raio-x`. Pelo endereço de rede, o navegador bloqueia a câmera ao vivo. Use **Enviar foto**.
 - **Depois do Pull a página continua igual:** pare o servidor (Ctrl + C), rode de novo e atualize com **Ctrl + F5**.
 
-## 11. Próximos passos
+## 12. Do protótipo à operação: homologação e próximos passos
 
+O que está neste repositório é um **protótipo**: ele prova que a ideia funciona de ponta a ponta, mas foi feito em 48 horas, com custos fictícios e dados de demonstração. O caminho para virar uma ferramenta do dia a dia da Bovinu'S é este:
+
+### Fase 1: protótipo (hackathon), concluída
+Raio-X do Prato com IA, controle das mesas, avaliação pelo QR Code e painel do gerente funcionando juntos, no computador e no celular.
+
+### Fase 2: homologação no restaurante
+Usar o sistema **em paralelo à rotina do salão**, por algumas semanas, para medir e ajustar sem atrapalhar a operação:
+- **Custos reais** de cada item do buffet e o preço real do kg no lugar dos valores fictícios.
+- **Calibrar a IA com fotos reais** dos pratos da casa: ajustar o guia visual do buffet aos pratos e às cubas da Bovinu'S e conferir a identificação com a balança.
+- **Alinhar os nomes** dos itens entre o formulário do cliente e o Raio-X, para cruzar "o que o cliente comeu" com "o que ele achou".
+- **Criar a linha de base** do restaurante: margem por prato, tempo de mesa suja por salão e horário, notas dos clientes. Com o tempo, o painel fica **muito mais detalhado**: compara semanas, horários de pico e dias da semana.
+- **Treinar a equipe** (balança, garçons e gerência) e ajustar o fluxo de cada tela ao que eles realmente fazem no salão.
+
+### Fase 3: ajustes com o feedback dos donos e da equipe
+O que o painel mostra, quais alertas importam e em que ordem, e quais relatórios o gerente precisa vêm **das conversas com os donos e com a equipe** durante a homologação. O protótipo foi construído para ser alterado: telas, alertas, perguntas do formulário e categorias podem mudar sem refazer o sistema.
+
+### Fase 4: evolução
 - **Integração com a balança e o PDV** da casa, para o peso entrar automaticamente.
-- **Estação de leitura da comanda** (`/pipar`, já implementada): medir o tempo de fila da entrada até a balança e o tempo até o garçom atender a mesa.
-- **Foto do prato devolvido** para medir as sobras e o desperdício.
+- **Leitura da comanda** (`/pipar`, já implementada): medir o tempo de fila da entrada até a balança e o tempo até o garçom atender a mesa.
 - **Um QR Code por mesa** (link pré-preenchido do Google Forms com o número da mesa), para cruzar a nota do cliente com o tempo de limpeza daquela mesa.
+- **Foto do prato devolvido** para medir as sobras e o desperdício.
 - **Alerta de reposição das cubas** a partir do consumo por item e por horário.
-- Custos reais por kg cadastrados pelo gerente no próprio painel.
+- **Publicação em servidor com HTTPS**, login individual por funcionário e cadastro de custos pelo próprio painel.
+- Levar o modelo para **outras unidades da rede Bovinu'S**, comparando os resultados entre elas.
 
-## 12. Estrutura do repositório
+### Limitações conhecidas do protótipo
+- Custos por kg e preço de venda são **fictícios**.
+- O plano gratuito do Gemini pode **demorar ou ficar sobrecarregado** em alguns horários (o sistema tenta de novo e troca de modelo sozinho, mas a resposta pode levar alguns segundos).
+- Roda no computador da equipe e abre no celular **pela mesma rede Wi-Fi**; ainda não está publicado na internet.
+- O login do painel é **um usuário só**, para demonstração.
+- As telas do painel nas capturas usam **dados de demonstração** do simulador.
+
+## 13. Estrutura do repositório
 
 ```
 raio-x-bovinus/
@@ -368,3 +428,7 @@ raio-x-bovinus/
 ├── .env.example            # modelo do arquivo de configuração (sem chave)
 └── requirements.txt
 ```
+
+## Agradecimentos
+
+À **Bovinu'S Grill & Beer - Augusta**, por abrir os desafios reais do restaurante, à **FMU** pela organização do Hackathon Tech 2026.2 e aos mentores pelas orientações durante o evento.
